@@ -29,7 +29,7 @@ projet-tuteure/
 1. Cloner le repository :
 
 ```bash
-git clone https://github.com/votre-username/projet-tuteure.git
+git clone https://github.com/shoyers/projet-tuteure.git
 cd projet-tuteure
 ```
 
