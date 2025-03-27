@@ -1,4 +1,3 @@
-
 import customtkinter as ctk
 import os
 
@@ -12,7 +11,7 @@ from src.controllers.settings_controller import SettingsController
 from src.services.sensor_service import SensorService
 from src.database.connection import DatabaseConnection
 from src.database.query_manager import QueryManager
-from src.utils.console_redirector import ConsoleRedirector
+from src.utils.helpers import ConsoleRedirector
 
 # Classe principale de l'application de tableau de bord des capteurs.
 class SensorDashboardApp:
@@ -39,7 +38,7 @@ class SensorDashboardApp:
         
         # Vérifier si la connexion à la base de données est établie
         if self.dbConnection.isConnected():
-            self.queryManager = QueryManager(self.dbConnection.connection)
+            self.queryManager = QueryManager(self.dbConnection)
         else:
             self.queryManager = QueryManager(None)
             print("Attention: Connexion à la base de données non établie. Certaines fonctionnalités seront limitées.")
@@ -185,15 +184,39 @@ class SensorDashboardApp:
     
     # Crée les différentes vues de l'application
     def createViews(self):
-        # Créer les frames pour chaque vue
-        self.dashboardFrame = ctk.CTkFrame(self.contentFrame, fg_color="transparent")
-        self.tablesFrame = ctk.CTkFrame(self.contentFrame, fg_color="transparent")
+        # Créer des cadres défilants pour chaque vue
+        scrollbar_fg = COLOR_PALETTE['primary']
+        scrollbar_hover = COLOR_PALETTE['accent']
+        
+        self.dashboardFrame = ctk.CTkScrollableFrame(
+            self.contentFrame, 
+            fg_color="transparent", 
+            scrollbar_button_color=scrollbar_fg,
+            scrollbar_button_hover_color=scrollbar_hover,
+            corner_radius=10
+        )
+        
+        self.tablesFrame = ctk.CTkScrollableFrame(
+            self.contentFrame, 
+            fg_color="transparent", 
+            scrollbar_button_color=scrollbar_fg,
+            scrollbar_button_hover_color=scrollbar_hover,
+            corner_radius=10
+        )
+
         self.settingsFrame = ctk.CTkFrame(self.contentFrame, fg_color="transparent")
+        
+        #self.settingsFrame = ctk.CTkScrollableFrame( 
+        #    self.contentFrame,  
+        #    fg_color="transparent", 
+        #    scrollbar_button_color=scrollbar_fg,
+        #    scrollbar_button_hover_color=scrollbar_hover,
+        #    corner_radius=10
+        #)
         
         # Configurer les frames
         for frame in [self.dashboardFrame, self.tablesFrame, self.settingsFrame]:
             frame.grid_columnconfigure(0, weight=1)
-            frame.grid_rowconfigure(0, weight=1)
         
         # Créer les vues
         self.dashboardView = DashboardView(
@@ -222,7 +245,7 @@ class SensorDashboardApp:
         self.dashboardController = DashboardController(
             self.dashboardView, 
             self.sensorService, 
-            self.dbConnection.connection
+            self.dbConnection
         )
         self.tableController = TableController(
             self.tablesView, 
@@ -243,10 +266,6 @@ class SensorDashboardApp:
     
     # Change l'onglet actif.
     def switchTab(self, tabName):
-        """
-        Args:
-            tabName: Nom de l'onglet à afficher
-        """
         # Mettre à jour la variable d'onglet actif
         self.activeTab.set(tabName)
         
@@ -258,10 +277,13 @@ class SensorDashboardApp:
         # Afficher la vue sélectionnée
         if tabName == "dashboard":
             self.dashboardFrame.grid(row=0, column=0, sticky="nsew")
+            self.currentScrollableFrame = self.dashboardFrame
         elif tabName == "tables":
             self.tablesFrame.grid(row=0, column=0, sticky="nsew")
+            self.currentScrollableFrame = self.tablesFrame
         elif tabName == "settings":
             self.settingsFrame.grid(row=0, column=0, sticky="nsew")
+            #self.currentScrollableFrame = self.settingsFrame
         
         # Mettre à jour l'apparence des boutons de navigation
         for name, button in self.navButtons.items():
@@ -269,13 +291,75 @@ class SensorDashboardApp:
                 button.configure(fg_color=COLOR_PALETTE['accent'])
             else:
                 button.configure(fg_color="transparent")
+        
+        # Configurer les événements de défilement de la molette de souris
+        self.configureMouseWheel()
+    
+    # Configure les événements de défilement de la molette de souris
+    def configureMouseWheel(self):
+        # Dé-lier les événements précédents
+        self.root.unbind_all("<MouseWheel>")
+        self.root.unbind_all("<Button-4>")
+        self.root.unbind_all("<Button-5>")
+        
+        # Facteur de vitesse de défilement (plus élevé = plus rapide)
+        scroll_speed = 10
+        
+        # Fonctions de défilement
+        def _on_mousewheel(event):
+            if hasattr(self, 'currentScrollableFrame'):
+                # Vérifier la façon dont la frame défilante est structurée selon la version de CustomTkinter
+                if hasattr(self.currentScrollableFrame, '_parent_canvas'):
+                    # Version plus récente de CustomTkinter
+                    canvas = self.currentScrollableFrame._parent_canvas
+                elif hasattr(self.currentScrollableFrame, '_canvas'):
+                    # Version plus ancienne de CustomTkinter
+                    canvas = self.currentScrollableFrame._canvas
+                else:
+                    # Recherche d'un widget canvas dans les enfants
+                    for child in self.currentScrollableFrame.winfo_children():
+                        if isinstance(child, ctk.CTkCanvas):
+                            canvas = child
+                            break
+                    else:
+                        return  # Aucun canvas trouvé
+                
+                # Calculer la quantité de défilement avec le facteur de vitesse
+                delta = -1 * (event.delta // 120) * scroll_speed
+                # Sous Windows, l'événement MouseWheel est utilisé
+                canvas.yview_scroll(delta, "units")
+                
+        def _on_mousewheel_linux(event):
+            if hasattr(self, 'currentScrollableFrame'):
+                # Vérifier la façon dont la frame défilante est structurée selon la version de CustomTkinter
+                if hasattr(self.currentScrollableFrame, '_parent_canvas'):
+                    # Version plus récente de CustomTkinter
+                    canvas = self.currentScrollableFrame._parent_canvas
+                elif hasattr(self.currentScrollableFrame, '_canvas'):
+                    # Version plus ancienne de CustomTkinter
+                    canvas = self.currentScrollableFrame._canvas
+                else:
+                    # Recherche d'un widget canvas dans les enfants
+                    for child in self.currentScrollableFrame.winfo_children():
+                        if isinstance(child, ctk.CTkCanvas):
+                            canvas = child
+                            break
+                    else:
+                        return  # Aucun canvas trouvé
+                
+                # Sous Linux, les événements Button-4 et Button-5 sont utilisés
+                if event.num == 4:
+                    canvas.yview_scroll(-1 * scroll_speed, "units")
+                elif event.num == 5:
+                    canvas.yview_scroll(1 * scroll_speed, "units")
+        
+        # Lier les événements appropriés selon le système d'exploitation
+        self.root.bind_all("<MouseWheel>", _on_mousewheel)
+        self.root.bind_all("<Button-4>", _on_mousewheel_linux)
+        self.root.bind_all("<Button-5>", _on_mousewheel_linux)
     
     # Gère l'événement de sélection d'une table.
     def onTableSelect(self, tableName):
-        """  
-        Args:
-            table_name: Nom de la table sélectionnée
-        """
         self.tableController.loadTableData(tableName)
     
     # Rafraîchit la liste des tables.
@@ -321,6 +405,9 @@ class SensorDashboardApp:
         # Démarrer la lecture des données si la connexion est établie
         if self.sensorService.isAvailable():
             self.dashboardController.startDataReading()
+        
+        # Configurer les événements de défilement de la molette de souris
+        self.configureMouseWheel()
         
         # Démarrer la boucle principale
         self.root.mainloop()

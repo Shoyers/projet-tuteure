@@ -30,7 +30,7 @@ class TableController:
         Args:
             tableName: Nom de la table à charger
         """
-        columns, rows = self.query_manager.get_table_data(tableName)
+        columns, rows = self.queryManager.getTableData(tableName)
         self.view.updateTableData(tableName, columns, rows)
     
     # Démarre le rafraîchissement automatique

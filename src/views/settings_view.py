@@ -26,8 +26,8 @@ class SettingsView:
         self.connectionStatus = ctk.StringVar(value="Non connecté")
         self.dbHost = ctk.StringVar(value="localhost")
         self.dbUser = ctk.StringVar(value="root")
-        self.dbPassword = ctk.StringVar(value="")
-        self.dbName = ctk.StringVar(value="sensor_data")
+        self.dbPassword = ctk.StringVar(value="root")
+        self.dbName = ctk.StringVar(value="serv-projet")
         self.dbStatus = ctk.StringVar(value="Non connecté")
         
         # Créer le contenu de la vue
@@ -48,9 +48,7 @@ class SettingsView:
         
         # Section connexion base de données
         self.createDatabaseSection(mainSection)
-        
-        # Section informations
-        self.createInfoSection(mainSection)
+
     
     # Crée la section de connexion série.
     def createSerialSection(self, parent):
@@ -254,49 +252,7 @@ class SettingsView:
                                          font=ctk.CTkFont(family=self.museoFonts.get('bold', None), size=14),
                                          text_color=COLOR_PALETTE['text_muted'])
         self.dbStatusValue.grid(row=0, column=1, sticky="w", padx=0, pady=0)
-
-    # Crée la section d'informations.
-    def createInfoSection(self, parent):
-        """
-        Args:
-            parent: Le widget parent
-        """
-        # Cadre pour les informations
-        infoFrame = ctk.CTkFrame(parent, fg_color=COLOR_PALETTE['bg_card'], corner_radius=8, border_width=1, border_color=COLOR_PALETTE['border'])
-        infoFrame.grid(row=2, column=0, sticky="nsew", padx=0, pady=0)
-        infoFrame.columnconfigure(0, weight=1)
-        infoFrame.rowconfigure(1, weight=1)
-        
-        # Titre de la section
-        infoTitle = ctk.CTkLabel(infoFrame, text="Informations", 
-                                font=ctk.CTkFont(family=self.museoFonts.get('bold', None), size=16),
-                                text_color=COLOR_PALETTE['text_dark'])
-        infoTitle.grid(row=0, column=0, sticky="w", padx=20, pady=(20, 10))
-        
-        # Texte d'information
-        infoText = ctk.CTkTextbox(infoFrame, 
-                                 font=ctk.CTkFont(family=self.museoFonts.get('regular', None), size=14),
-                                 fg_color="transparent",
-                                 text_color=COLOR_PALETTE['text_dark'],
-                                 wrap="word")
-        infoText.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
-        
-        # Ajouter le texte d'information
-        infoText.insert("1.0", """
-Application de surveillance des capteurs
-
-Cette application permet de visualiser en temps réel les données provenant de différents capteurs environnementaux :
-- MQ135 (Qualité de l'air)
-- HC-SR04 (Distance)
-- SI1145 (Luminosité)
-- BME680 (Température, Pression, Humidité)
-
-Les données peuvent être enregistrées dans une base de données MySQL pour analyse ultérieure.
-
-Mode démo : Permet de simuler des données de capteurs pour tester l'application sans matériel.
-        """)
-        infoText.configure(state="disabled")
-    
+            
     # Met à jour la liste des ports disponibles.
     def updatePortsList(self, ports):
         """

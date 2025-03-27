@@ -4,7 +4,7 @@ from config.settings import COLOR_PALETTE;
 # Composant réutilisable pour afficher une carte de capteur
 class SensorCard:
     # Initialise une carte de capteur
-    def __init__(self, parent, row, col, title, valueVar, iconPath, color, museoFonts):
+    def __init__(self, parent, row, col, title, valueVar, iconPath, color, museoFonts, unit=None):
         """      
         Args:
             parent: Le widget parent
@@ -15,6 +15,7 @@ class SensorCard:
             icon_path: Le chemin vers l'icône
             color: La couleur du texte de la valeur
             museo_fonts: Dictionnaire des polices Museo
+            unit: Unité de mesure à afficher (optionnel)
         """
         self.parent = parent;
         self.row = row;
@@ -24,6 +25,7 @@ class SensorCard:
         self.iconPath = iconPath;
         self.color = color;
         self.museoFonts = museoFonts;
+        self.unit = unit;
         
         # Créer la carte
         self.card = self._createCard();
@@ -52,12 +54,34 @@ class SensorCard:
         valueFrame.grid_propagate(False);  # Empêcher la propagation de la grille
         
         # Valeur (en grand et en couleur)
-        valueLabel = ctk.CTkLabel(valueFrame, 
-                                 textvariable=self.valueVar,
-                                 font=ctk.CTkFont(family=self.museoFonts.get('bold', None), size=28),
-                                 text_color=self.color,
-                                 anchor="w");  # Alignement à gauche
-        valueLabel.place(x=0, y=0, relwidth=1, relheight=1);  # Utiliser place au lieu de grid
+        if self.unit:
+            # Créer un frame pour contenir la valeur et l'unité
+            combined_frame = ctk.CTkFrame(valueFrame, fg_color="transparent")
+            combined_frame.place(x=0, y=0, relwidth=1, relheight=1)
+            
+            # Valeur
+            valueLabel = ctk.CTkLabel(combined_frame, 
+                                    textvariable=self.valueVar,
+                                    font=ctk.CTkFont(family=self.museoFonts.get('bold', None), size=28),
+                                    text_color=self.color,
+                                    anchor="w")
+            valueLabel.grid(row=0, column=0, sticky="w", padx=0, pady=0)
+            
+            # Unité (plus petite taille)
+            unitLabel = ctk.CTkLabel(combined_frame, 
+                                    text=self.unit,
+                                    font=ctk.CTkFont(family=self.museoFonts.get('regular', None), size=14),
+                                    text_color=self.color,
+                                    anchor="w")
+            unitLabel.grid(row=0, column=1, sticky="w", padx=(2, 0), pady=(5, 0))  # Alignement vertical ajusté
+        else:
+            # Juste la valeur sans unité
+            valueLabel = ctk.CTkLabel(valueFrame, 
+                                    textvariable=self.valueVar,
+                                    font=ctk.CTkFont(family=self.museoFonts.get('bold', None), size=28),
+                                    text_color=self.color,
+                                    anchor="w")
+            valueLabel.place(x=0, y=0, relwidth=1, relheight=1)
         
         return card;
     

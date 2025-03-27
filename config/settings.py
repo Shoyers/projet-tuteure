@@ -1,20 +1,29 @@
 from urllib.parse import urlparse;
 
+
 # Lecture de l'URL de connexion depuis le fichier .env
-with open('.env', 'r') as f:
-    for line in f:
-        if line.startswith('SERVER_MYSQL_URL='):
-            db_url = line.split('=', 1)[1].strip();
-            break;
+#with open('.env', 'r') as f:
+#    for line in f:
+#        if line.startswith('SERVER_MYSQL_URL='):
+#            db_url = line.split('=', 1)[1].strip();
+#            break;
 
 # Parse l'URL de connexion MySQL
-parsed = urlparse(db_url);
+#parsed = urlparse(db_url);
+#DB_CONFIG = {
+#    'host': parsed.hostname,
+#    'user': parsed.username,
+#    'password': parsed.password,
+#    'database': parsed.path[1:]  # Enlever le premier '/'
+#};
+
 DB_CONFIG = {
-    'host': parsed.hostname,
-    'user': parsed.username,
-    'password': parsed.password,
-    'database': parsed.path[1:]  # Enlever le premier '/'
+    'host': 'localhost',
+    'user': 'root',
+    'password': 'root',
+    'database': 'serv-projet'
 };
+
 
 # Paramètres de l'interface
 UI_CONFIG = {
@@ -56,6 +65,7 @@ COLOR_PALETTE = {
     'success': "#28a745",      # Vert pour les succès
     'warning': "#ffc107",      # Jaune pour les avertissements
     'danger': "#dc3545",       # Rouge pour les erreurs
+    'info': "#17a2b8",         # Bleu clair pour les informations
     'text_dark': "#212529",    # Texte foncé
     'text_light': "#FFFFFF",   # Texte clair
     'text_muted': "#6c757d",   # Texte grisé pour les informations secondaires

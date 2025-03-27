@@ -35,6 +35,7 @@ class DatabaseConnection:
             self.cursor = self.connection.cursor();
             self._isConnected = True;
             self.errorMessage = '';
+            print(f"Connexion établie à la base de données {self.dbConfig.get('database')} sur {self.dbConfig.get('host')}");
             return True;
         except Exception as e:
             self._isConnected = False;
@@ -57,10 +58,19 @@ class DatabaseConnection:
             return False;
             
         try:
-            # Vérifier si la connexion est toujours active
-            self.connection.ping(reconnect=False, attempts=1, delay=0);
-            return True;
-        except:
+            # Vérifier si la connexion est toujours active en utilisant la méthode appropriée
+            # MySQLConnection utilise is_connected() et non isConnected()
+            if hasattr(self.connection, 'is_connected'):
+                is_connected = self.connection.is_connected()
+            else:
+                # Utilisation de ping comme fallback
+                self.connection.ping(reconnect=False, attempts=1, delay=0);
+                is_connected = True
+                
+            self._isConnected = is_connected
+            return is_connected
+        except Exception as e:
+            print(f"Erreur lors de la vérification de la connexion: {str(e)}")
             self._isConnected = False;
             return False;
     
@@ -71,30 +81,5 @@ class DatabaseConnection:
         return None;
     
     # Insère les données des capteurs dans la base de données
-    def insertSensorData(self, sensorData, rawData=''):
-        if not self.isConnected():
-            return False;
-
-        try:
-            query = """
-                INSERT INTO sensor_data 
-                (air_quality, distance, luminosity, temperature, pressure, humidity, raw_data)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """;
-            
-            values = (
-                sensorData['airQuality'],
-                sensorData['distance'],
-                sensorData['luminosity'],
-                sensorData['temperature'],
-                sensorData['pressure'],
-                sensorData['humidity'],
-                rawData
-            );
-            
-            self.cursor.execute(query, values);
-            self.connection.commit();
-            return True;
-        except Exception as e:
-            print(f'Erreur lors de l\'insertion des données: {str(e)}');
-            return False; 
+    # NOTE: Cette méthode a été déplacée vers QueryManager
+    # Veuillez utiliser QueryManager.insertSensorData à la place 

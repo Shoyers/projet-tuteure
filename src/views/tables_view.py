@@ -10,8 +10,8 @@ class TablesView:
         """   
         Args:
             parent: Le widget parent
-            museo_fonts: Dictionnaire des polices Museo
-            on_table_select: Fonction à appeler lorsqu'une table est sélectionnée
+            museoFonts: Dictionnaire des polices Museo
+            onTableSelect: Fonction à appeler lorsqu'une table est sélectionnée
             onRefreshTables: Fonction à appeler pour rafraîchir la liste des tables
         """
         self.parent = parent
@@ -43,7 +43,7 @@ class TablesView:
             fg_color=COLOR_PALETTE['bg_card'], 
             corner_radius=8, 
             border_width=2, 
-            border_color=COLOR_PALETTE['primary'],
+            border_color=COLOR_PALETTE['border'],
             height=600)
         self.leftPanel.grid(row=0, column=0, sticky="n", padx=(0, 10), pady=0)
         self.leftPanel.grid_propagate(False)  # Empêche le redimensionnement automatique
@@ -172,7 +172,7 @@ class TablesView:
         selection = self.tablesListbox.curselection()
         if selection:
             table_name = self.tablesListbox.get(selection[0])
-            self.on_table_select(table_name)
+            self.onTableSelect(table_name)
     
     # Rafraîchit les données de la table actuellement sélectionnée.
     def _refreshCurrentTable(self):
@@ -308,12 +308,12 @@ class TablesView:
             interval: Intervalle de rafraîchissement en secondes
         """
         if isActive:
-            self.auto_refresh_status.configure(
+            self.autoRefreshStatus.configure(
                 text=f"Auto-refresh: Actif ({interval}s)",
                 text_color=COLOR_PALETTE['primary']
             )
         else:
-            self.auto_refresh_status.configure(
+            self.autoRefreshStatus.configure(
                 text="Auto-refresh: Inactif",
                 text_color=COLOR_PALETTE['text_muted']
             )

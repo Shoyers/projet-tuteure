@@ -22,9 +22,12 @@ class DashboardView:
         self.onToggleDemo = onToggleDemo
         
         # Variables pour les valeurs des capteurs
-        self.airQualityVar = ctk.StringVar(value="N/A")
+        self.co2Var = ctk.StringVar(value="N/A")
+        self.nh3Var = ctk.StringVar(value="N/A")
         self.distanceVar = ctk.StringVar(value="N/A")
         self.luminosityVar = ctk.StringVar(value="N/A")
+        self.uvIndexVar = ctk.StringVar(value="N/A")
+        self.irValueVar = ctk.StringVar(value="N/A")
         self.temperatureVar = ctk.StringVar(value="N/A")
         self.humidityVar = ctk.StringVar(value="N/A")
         self.pressureVar = ctk.StringVar(value="N/A")
@@ -40,9 +43,9 @@ class DashboardView:
     def createDashboardContent(self):
         # Configuration de la grille
         self.parent.columnconfigure(0, weight=1)
-        self.parent.rowconfigure(1, weight=0)  # Contrôles
-        self.parent.rowconfigure(2, weight=0)  # Capteurs
-        self.parent.rowconfigure(3, weight=1)  # Console
+        self.parent.rowconfigure(0, weight=0)  # Contrôles
+        self.parent.rowconfigure(1, weight=0)  # Capteurs
+        self.parent.rowconfigure(2, weight=1)  # Console
         
         # Section des contrôles
         self.createControlsSection()
@@ -188,87 +191,118 @@ class DashboardView:
         self.sensorsContainer = ctk.CTkFrame(frame, fg_color="transparent")
         self.sensorsContainer.grid(row=0, column=0, sticky="nsew", padx=20, pady=10)
         
-        # Configurer la grille avec 3 colonnes égales
+        # Configurer la grille avec 3 colonnes égales et 4 lignes
         self.sensorsContainer.grid_columnconfigure((0, 1, 2), weight=1, uniform="equal")
+        self.sensorsContainer.grid_rowconfigure((0, 1, 2, 3), weight=1)
         
-        # Créer les cartes de capteurs avec les icônes spécifiques
-        self.airQualityCard = SensorCard(
-            self.sensorsContainer, 0, 0, "Qualité de l'air", 
-            self.airQualityVar, "src/public/icons/wind.png", 
-            COLOR_PALETTE['primary'], self.museoFonts
+        # Première ligne - CO2, NH3, Distance
+        self.co2Card = SensorCard(
+            self.sensorsContainer, 0, 0, "CO2", 
+            self.co2Var, "src/public/icons/co2.png", 
+            COLOR_PALETTE['primary'], self.museoFonts, "ppm"
+        )
+        
+        self.nh3Card = SensorCard(
+            self.sensorsContainer, 0, 1, "NH3", 
+            self.nh3Var, "src/public/icons/nh3.png", 
+            COLOR_PALETTE['primary'], self.museoFonts, "ppm"
         )
         
         self.distanceCard = SensorCard(
-            self.sensorsContainer, 0, 1, "Distance", 
+            self.sensorsContainer, 0, 2, "Distance", 
             self.distanceVar, "src/public/icons/ruler.png", 
-            COLOR_PALETTE['primary'], self.museoFonts
+            COLOR_PALETTE['primary'], self.museoFonts, "m"
         )
         
+        # Deuxième ligne - Luminosité, UV, IR
         self.luminosityCard = SensorCard(
-            self.sensorsContainer, 0, 2, "Luminosité", 
+            self.sensorsContainer, 1, 0, "Luminosité", 
             self.luminosityVar, "src/public/icons/sun.png", 
+            COLOR_PALETTE['primary'], self.museoFonts, "lux"
+        )
+        
+        self.uvIndexCard = SensorCard(
+            self.sensorsContainer, 1, 1, "UV Index", 
+            self.uvIndexVar, "src/public/icons/uv.png", 
             COLOR_PALETTE['primary'], self.museoFonts
         )
         
-        # Créer un conteneur pour le titre BME680
-        bmeTitleContainer = ctk.CTkFrame(frame, fg_color="transparent")
-        bmeTitleContainer.grid(row=1, column=0, sticky="nsew", padx=20, pady=(20, 5))
-        bmeTitleContainer.grid_columnconfigure(0, weight=1)
-        
-        # Titre pour la section BME680
-        bmeSectionTitle = ctk.CTkLabel(bmeTitleContainer, text="Capteur BME680", 
-                                       font=ctk.CTkFont(family=self.museoFonts.get('bold', None), size=16),
-                                       text_color=COLOR_PALETTE['text_dark'])
-        bmeSectionTitle.grid(row=0, column=0, sticky="w")
-        
-        # Créer un conteneur pour les cartes BME680
-        bmeContainer = ctk.CTkFrame(frame, fg_color="transparent")
-        bmeContainer.grid(row=2, column=0, sticky="nsew", padx=20, pady=5)
-        bmeContainer.grid_columnconfigure((0, 1, 2), weight=1, uniform="equal")
-        
-        # Créer des cartes individuelles pour chaque mesure BME680
-        self.temperatureCard = SensorCard(
-            bmeContainer, 0, 0, "Température", 
-            self.temperatureVar, "src/public/icons/thermometer-sun.png", 
+        self.irValueCard = SensorCard(
+            self.sensorsContainer, 1, 2, "Infrarouge", 
+            self.irValueVar, "src/public/icons/ir.png", 
             COLOR_PALETTE['primary'], self.museoFonts
+        )
+        
+        # Troisième ligne - Température, Humidité, Pression
+        self.temperatureCard = SensorCard(
+            self.sensorsContainer, 2, 0, "Température", 
+            self.temperatureVar, "src/public/icons/thermometer.png", 
+            COLOR_PALETTE['primary'], self.museoFonts, "°C"
         )
         
         self.humidityCard = SensorCard(
-            bmeContainer, 0, 1, "Humidité", 
-            self.humidityVar, "src/public/icons/droplets.png", 
-            COLOR_PALETTE['primary'], self.museoFonts
+            self.sensorsContainer, 2, 1, "Humidité", 
+            self.humidityVar, "src/public/icons/humidity.png", 
+            COLOR_PALETTE['primary'], self.museoFonts, "%"
         )
         
         self.pressureCard = SensorCard(
-            bmeContainer, 0, 2, "Pression", 
-            self.pressureVar, "src/public/icons/circle-gauge.png", 
-            COLOR_PALETTE['primary'], self.museoFonts
+            self.sensorsContainer, 2, 2, "Pression", 
+            self.pressureVar, "src/public/icons/barometer.png", 
+            COLOR_PALETTE['primary'], self.museoFonts, "hPa"
         )
     
-    # Met à jour les valeurs des capteurs affichées dans le tableau de bord.
+    # Met à jour les valeurs des capteurs avec les nouvelles données
     def updateSensorValues(self, data):
-        """  
+        """
         Args:
             data: Dictionnaire contenant les valeurs des capteurs
         """
-        # Mettre à jour les variables StringVar
-        if 'airQuality' in data:
-            self.airQualityVar.set(f"{data['airQuality']} PPM")
+        # Mettre à jour les variables de données si elles existent
+        if 'co2' in data and data['co2'] is not None and data['co2'] != 'N/A':
+            self.co2Var.set(f"{data['co2']:.2f}")
+        else:
+            self.co2Var.set("N/A")
         
-        if 'distance' in data:
-            self.distanceVar.set(f"{data['distance']} m")
+        if 'nh3' in data and data['nh3'] is not None and data['nh3'] != 'N/A':
+            self.nh3Var.set(f"{data['nh3']:.2f}")
+        else:
+            self.nh3Var.set("N/A")
         
-        if 'luminosity' in data:
-            self.luminosityVar.set(f"{data['luminosity']} lux")
+        if 'distance' in data and data['distance'] is not None and data['distance'] != 'N/A':
+            self.distanceVar.set(f"{data['distance']:.2f}")
+        else:
+            self.distanceVar.set("N/A")
         
-        if 'temperature' in data:
-            self.temperatureVar.set(f"{data['temperature']} °C")
+        if 'luminosity' in data and data['luminosity'] is not None and data['luminosity'] != 'N/A':
+            self.luminosityVar.set(str(data['luminosity']))
+        else:
+            self.luminosityVar.set("N/A")
         
-        if 'humidity' in data:
-            self.humidityVar.set(f"{data['humidity']} %")
+        if 'uv_index' in data and data['uv_index'] is not None and data['uv_index'] != 'N/A':
+            self.uvIndexVar.set(f"{data['uv_index']:.2f}")
+        else:
+            self.uvIndexVar.set("N/A")
         
-        if 'pressure' in data:
-            self.pressureVar.set(f"{data['pressure']} hPa")
+        if 'ir_value' in data and data['ir_value'] is not None and data['ir_value'] != 'N/A':
+            self.irValueVar.set(str(data['ir_value']))
+        else:
+            self.irValueVar.set("N/A")
+        
+        if 'temperature' in data and data['temperature'] is not None and data['temperature'] != 'N/A':
+            self.temperatureVar.set(f"{data['temperature']:.1f}")
+        else:
+            self.temperatureVar.set("N/A")
+        
+        if 'humidity' in data and data['humidity'] is not None and data['humidity'] != 'N/A':
+            self.humidityVar.set(str(data['humidity']))
+        else:
+            self.humidityVar.set("N/A")
+        
+        if 'pressure' in data and data['pressure'] is not None and data['pressure'] != 'N/A':
+            self.pressureVar.set(str(data['pressure']))
+        else:
+            self.pressureVar.set("N/A")
     
     # Ajoute un message à la console.
     def logToConsole(self, message):

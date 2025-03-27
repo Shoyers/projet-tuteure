@@ -4,23 +4,26 @@ CREATE TABLE sensor_data (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Données des capteurs
-    air_quality INT NULL,           -- Qualité de l'air (MQ135) en PPM
-    distance DECIMAL(5,2) NULL,     -- Distance (HC-SR04) en mètres
-    luminosity INT NULL,            -- Luminosité (SI1145) en lux
-    temperature DECIMAL(4,1) NULL,  -- Température (BME680) en °C
-    pressure INT NULL,              -- Pression (BME680) en hPa
-    humidity INT NULL,              -- Humidité (BME680) en %
-    
+    air_quality INT NULL,            -- Qualité de l'air (valeur agrégée) en PPM
+    co2 DECIMAL(6,2) NULL,           -- Concentration de CO2 (MQ135) en PPM
+    nh3 DECIMAL(6,2) NULL,           -- Concentration de NH3 (MQ135) en PPM
+    distance DECIMAL(5,2) NULL,      -- Distance (HC-SR04) en mètres
+    luminosity INT NULL,             -- Luminosité visible (SI1145) en lux
+    uv_index DECIMAL(4,2) NULL,      -- Indice UV (SI1145)
+    ir_value INT NULL,               -- Valeur infrarouge (SI1145)
+    temperature DECIMAL(4,1) NULL,   -- Température (BME680) en °C
+    pressure INT NULL,               -- Pression (BME680) en hPa
+    humidity INT NULL,               -- Humidité (BME680) en %
     -- Données brutes (optionnel)
-    raw_data TEXT NULL              -- Données brutes reçues du XBee
+    raw_data TEXT NULL               -- Données brutes reçues du XBee
 );
 
 -- Index pour accélérer les requêtes par date
 CREATE INDEX idx_sensor_data_timestamp ON sensor_data (timestamp);
 
 -- Exemples d'insertion de données
--- INSERT INTO sensor_data (air_quality, distance, luminosity, temperature, pressure, humidity, raw_data)
--- VALUES (150, 2.5, 800, 24.5, 1010, 65, 'AQ:150,DIST:2.5,LUM:800,TEMP:24.5,PRESS:1010,HUM:65');
+-- INSERT INTO sensor_data (air_quality, co2, nh3, distance, luminosity, uv_index, ir_value, temperature, pressure, humidity, raw_data)
+-- VALUES (800, 8.34, 16.75, 2.5, 800, 0.34, 348, 24.5, 1010, 65, 'AQ:800,CO2:8.34,NH3:16.75,DIST:2.5,LUM:800,UV:0.34,IR:348,TEMP:24.5,PRESS:1010,HUM:65');
 
 -- Exemples de requêtes utiles
 
@@ -30,8 +33,12 @@ CREATE INDEX idx_sensor_data_timestamp ON sensor_data (timestamp);
 -- 2. Obtenir la moyenne des valeurs sur la dernière heure
 -- SELECT 
 --     AVG(air_quality) as avg_air_quality,
+--     AVG(co2) as avg_co2,
+--     AVG(nh3) as avg_nh3,
 --     AVG(distance) as avg_distance,
 --     AVG(luminosity) as avg_luminosity,
+--     AVG(uv_index) as avg_uv,
+--     AVG(ir_value) as avg_ir,
 --     AVG(temperature) as avg_temperature,
 --     AVG(pressure) as avg_pressure,
 --     AVG(humidity) as avg_humidity
@@ -44,7 +51,9 @@ CREATE INDEX idx_sensor_data_timestamp ON sensor_data (timestamp);
 --     MIN(temperature) as min_temp,
 --     MAX(temperature) as max_temp,
 --     AVG(temperature) as avg_temp,
---     AVG(air_quality) as avg_air_quality,
+--     AVG(co2) as avg_co2,
+--     AVG(nh3) as avg_nh3,
+--     AVG(uv_index) as avg_uv,
 --     AVG(humidity) as avg_humidity
 -- FROM sensor_data
 -- GROUP BY DATE(timestamp)

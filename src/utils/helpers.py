@@ -54,44 +54,72 @@ def createSensorRow(parent, row, icon, title, valueVar, hasProgress=True, color=
     
     return None, valueLabel;
 
-# Redirige la sortie standard vers un widget Text de Tkinter
+# Redirige la sortie standard vers un widget Text de Tkinter ou CTkTextbox de customtkinter
 class ConsoleRedirector:
     def __init__(self, textWidget):
         self.textWidget = textWidget;
         
-        # Définir des couleurs pour différents types de messages
-        self.textWidget.tag_configure('error', foreground='#E74C3C');
-        self.textWidget.tag_configure('success', foreground='#2ECC71');
-        self.textWidget.tag_configure('info', foreground='#3498DB');
-        self.textWidget.tag_configure('warning', foreground='#F39C12');
+        # Vérifier si nous sommes avec un widget CTkTextbox ou un widget Text standard
+        self.is_ctk = 'CTkTextbox' in str(type(textWidget))
         
-        # Ajouter des styles pour les timestamps et les types de messages
-        self.textWidget.tag_configure('timestamp', foreground='#7F8C8D');
-        self.textWidget.tag_configure('bold', font=('Consolas', 10, 'bold'));
+        # Si c'est un Text standard, on configure les tags
+        if not self.is_ctk:
+            # Définir des couleurs pour différents types de messages
+            self.textWidget.tag_configure('error', foreground='#E74C3C');
+            self.textWidget.tag_configure('success', foreground='#2ECC71');
+            self.textWidget.tag_configure('info', foreground='#3498DB');
+            self.textWidget.tag_configure('warning', foreground='#F39C12');
+            
+            # Ajouter des styles pour les timestamps et les types de messages
+            self.textWidget.tag_configure('timestamp', foreground='#7F8C8D');
+            self.textWidget.tag_configure('bold', font=('Consolas', 10, 'bold'));
     
     def write(self, string):
-        self.textWidget.config(state=tk.NORMAL);
+        # Rendre le widget éditable
+        if self.is_ctk:
+            self.textWidget.configure(state="normal")
+        else:
+            self.textWidget.config(state=tk.NORMAL);
         
         # Ajouter un timestamp pour les nouvelles lignes
         if string.startswith(('Erreur', 'Port', 'Connexion', 'Déconnexion', 'Mode', 'Données', 'Démarrage', 'Arrêt')):
             from datetime import datetime;
             timestamp = datetime.now().strftime('[%H:%M:%S] ');
-            self.textWidget.insert(tk.END, timestamp, 'timestamp');
-        
-        # Appliquer des tags de couleur en fonction du contenu du message
-        if 'Erreur' in string or 'erreur' in string or 'Échec' in string:
-            self.textWidget.insert(tk.END, string, ('error', 'bold'));
-        elif 'succès' in string or 'établie' in string or 'disponible' in string or 'insérées' in string:
-            self.textWidget.insert(tk.END, string, ('success', 'bold'));
-        elif 'Démarrage' in string or 'activé' in string or 'Données' in string:
-            self.textWidget.insert(tk.END, string, ('info', 'bold'));
-        elif 'Arrêt' in string or 'désactivé' in string or 'Utilisez' in string:
-            self.textWidget.insert(tk.END, string, ('warning', 'bold'));
-        else:
-            self.textWidget.insert(tk.END, string);
             
-        self.textWidget.see(tk.END);
-        self.textWidget.config(state=tk.DISABLED);
+            if self.is_ctk:
+                # Pour CTkTextbox, pas de tags
+                self.textWidget.insert("end", timestamp)
+            else:
+                self.textWidget.insert(tk.END, timestamp, 'timestamp');
+        
+        # Gérer les couleurs différemment selon le type de widget
+        if self.is_ctk:
+            # Pour CTkTextbox, pas de tags
+            self.textWidget.insert("end", string)
+        else:
+            # Pour Text standard, utiliser les tags
+            if 'Erreur' in string or 'erreur' in string or 'Échec' in string:
+                self.textWidget.insert(tk.END, string, ('error', 'bold'));
+            elif 'succès' in string or 'établie' in string or 'disponible' in string or 'insérées' in string:
+                self.textWidget.insert(tk.END, string, ('success', 'bold'));
+            elif 'Démarrage' in string or 'activé' in string or 'Données' in string:
+                self.textWidget.insert(tk.END, string, ('info', 'bold'));
+            elif 'Arrêt' in string or 'désactivé' in string or 'Utilisez' in string:
+                self.textWidget.insert(tk.END, string, ('warning', 'bold'));
+            else:
+                self.textWidget.insert(tk.END, string);
+        
+        # Faire défiler jusqu'à la fin
+        if self.is_ctk:
+            self.textWidget.see("end")
+        else:
+            self.textWidget.see(tk.END);
+        
+        # Rendre le widget non éditable
+        if self.is_ctk:
+            self.textWidget.configure(state="disabled")
+        else:
+            self.textWidget.config(state=tk.DISABLED);
     
     def flush(self):
         pass; 

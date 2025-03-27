@@ -10,37 +10,91 @@ class QueryManager:
             dbConnection: La connexion à la base de données
         """
         self.dbConnection = dbConnection
+        # Si dbConnection est une instance de DatabaseConnection, on utilise sa propriété connection
+        if dbConnection is not None and hasattr(dbConnection, 'connection'):
+            self.connection = dbConnection.connection
+        else:
+            self.connection = dbConnection
     
     # Insère les données des capteurs dans la base de données
-    def insertSensorData(self, sensorData):
+    def insertSensorData(self, data):
         """
+        Insère des données de capteurs dans la base de données.
+        
         Args:
-            sensorData: Un objet SensorData ou un dictionnaire contenant les valeurs des capteurs
-            
+            data: Un dictionnaire contenant les données à insérer.
+                 Les clés devraient correspondre aux noms des colonnes de la table sensor_data.
+        
         Returns:
-            True si l'insertion a réussi, False sinon
+            True si l'insertion a réussi, False sinon.
         """
         try:
-            # Convertir en SensorData si c'est un dictionnaire
-            if isinstance(sensorData, dict):
-                sensorData = SensorData.fromDict(sensorData)
+            # Vérifier qu'un dictionnaire valide est fourni
+            if not data or not isinstance(data, dict):
+                print("Données invalides pour l'insertion")
+                return False
             
-            # Créer la requête SQL
-            query = """
-            INSERT INTO sensor_data 
-            (timestamp, air_quality, distance, luminosity, temperature, pressure, humidity) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """
+            # Normaliser les clés et traiter les valeurs spéciales
+            normalized_data = {}
+            
+            # Mapper les différents formats de clés possibles
+            key_mapping = {
+                'co2': ['co2', 'CO2'],
+                'nh3': ['nh3', 'NH3'],
+                'distance': ['distance', 'dist', 'DIST'],
+                'luminosity': ['luminosity', 'lum', 'LUM'],
+                'uv_index': ['uv_index', 'uvIndex', 'UV'],
+                'ir_value': ['ir_value', 'irValue', 'IR'],
+                'temperature': ['temperature', 'temp', 'TEMP'],
+                'pressure': ['pressure', 'press', 'PRESS'],
+                'humidity': ['humidity', 'hum', 'HUM'],
+                'timestamp': ['timestamp', 'time', 'date'],
+                'raw_data': ['raw_data', 'rawData']
+            }
+            
+            # Normaliser les données
+            for db_key, possible_keys in key_mapping.items():
+                for key in possible_keys:
+                    if key in data and data[key] is not None:
+                        # Convertir 'N/A' en None
+                        if data[key] == 'N/A':
+                            normalized_data[db_key] = None
+                        else:
+                            normalized_data[db_key] = data[key]
+                        break
+            
+            # Construire la requête d'insertion
+            columns = []
+            placeholders = []
+            values = []
+            
+            # Ajouter chaque clé et valeur s'ils sont présents et pas None
+            for key, value in normalized_data.items():
+                if value is not None:
+                    columns.append(key)
+                    placeholders.append("%s")
+                    values.append(value)
+            
+            # S'il n'y a pas de colonnes, ne pas créer d'insertion
+            if not columns:
+                print("Aucune donnée valide à insérer")
+                return False
+            
+            # Construire la requête
+            query = f"INSERT INTO sensor_data ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
             
             # Exécuter la requête
-            cursor = self.dbConnection.cursor()
-            cursor.execute(query, sensorData.toDbTuple())
-            self.dbConnection.commit()
-            cursor.close()
+            cursor = self.connection.cursor()
+            cursor.execute(query, values)
+            self.connection.commit()
             
+            print(f"Données capteurs insérées avec succès, colonnes: {columns}")
             return True
+            
         except Exception as e:
-            print(f"Erreur lors de l'insertion des données: {str(e)}")
+            print(f"Erreur lors de l'insertion des données capteurs: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return False
         
     # Récupère les dernières données de capteurs
@@ -54,13 +108,13 @@ class QueryManager:
         """
         try:
             query = """
-            SELECT timestamp, air_quality, distance, luminosity, temperature, pressure, humidity
+            SELECT timestamp, air_quality, co2, nh3, distance, luminosity, uv_index, ir_value, temperature, pressure, humidity
             FROM sensor_data
             ORDER BY timestamp DESC
             LIMIT %s
             """
             
-            cursor = self.dbConnection.cursor()
+            cursor = self.connection.cursor()
             cursor.execute(query, (limit,))
             rows = cursor.fetchall()
             cursor.close()
@@ -71,11 +125,15 @@ class QueryManager:
                 data = {
                     'timestamp': row[0],
                     'airQuality': row[1],
-                    'distance': row[2],
-                    'luminosity': row[3],
-                    'temperature': row[4],
-                    'pressure': row[5],
-                    'humidity': row[6]
+                    'co2': row[2],
+                    'nh3': row[3],
+                    'distance': row[4],
+                    'luminosity': row[5],
+                    'uvIndex': row[6],
+                    'irValue': row[7],
+                    'temperature': row[8],
+                    'pressure': row[9],
+                    'humidity': row[10]
                 }
                 result.append(SensorData.fromDict(data))
             
@@ -111,13 +169,13 @@ class QueryManager:
             startDateStr = startDate.strftime('%Y-%m-%d %H:%M:%S')
             
             query = """
-            SELECT timestamp, air_quality, distance, luminosity, temperature, pressure, humidity
+            SELECT timestamp, air_quality, co2, nh3, distance, luminosity, uv_index, ir_value, temperature, pressure, humidity
             FROM sensor_data
             WHERE timestamp >= %s
             ORDER BY timestamp DESC
             """
             
-            cursor = self.dbConnection.cursor()
+            cursor = self.connection.cursor()
             cursor.execute(query, (startDateStr,))
             rows = cursor.fetchall()
             cursor.close()
@@ -128,11 +186,15 @@ class QueryManager:
                 data = {
                     'timestamp': row[0],
                     'airQuality': row[1],
-                    'distance': row[2],
-                    'luminosity': row[3],
-                    'temperature': row[4],
-                    'pressure': row[5],
-                    'humidity': row[6]
+                    'co2': row[2],
+                    'nh3': row[3],
+                    'distance': row[4],
+                    'luminosity': row[5],
+                    'uvIndex': row[6],
+                    'irValue': row[7],
+                    'temperature': row[8],
+                    'pressure': row[9],
+                    'humidity': row[10]
                 }
                 result.append(SensorData.fromDict(data))
             
@@ -148,13 +210,13 @@ class QueryManager:
             Une liste des noms de tables
         """
         try:
-            if self.dbConnection is None:
+            if self.connection is None:
                 print("Erreur: Connexion à la base de données non établie")
                 return []
                 
             query = "SHOW TABLES"
             
-            cursor = self.dbConnection.cursor()
+            cursor = self.connection.cursor()
             cursor.execute(query)
             rows = cursor.fetchall()
             cursor.close()
@@ -181,7 +243,7 @@ class QueryManager:
             # Récupérer les informations sur les colonnes
             queryColumns = f"SHOW COLUMNS FROM {tableName}"
             
-            cursor = self.dbConnection.cursor()
+            cursor = self.connection.cursor()
             cursor.execute(queryColumns)
             columnsInfo = cursor.fetchall()
             
@@ -210,7 +272,7 @@ class QueryManager:
             Un tuple (colonnes, lignes)
         """
         try:
-            cursor = self.dbConnection.cursor()
+            cursor = self.connection.cursor()
             
             if params:
                 cursor.execute(query, params)
@@ -225,10 +287,134 @@ class QueryManager:
                 return columns, rows
             else:
                 # Pour les autres types de requêtes (INSERT, UPDATE, DELETE)
-                self.dbConnection.commit()
+                self.connection.commit()
                 affectedRows = cursor.rowcount
                 cursor.close()
                 return [], [(f"{affectedRows} lignes affectées",)]
         except Exception as e:
             print(f"Erreur lors de l'exécution de la requête: {str(e)}")
-            return [], [(f"Erreur: {str(e)}",)] 
+            return [], [(f"Erreur: {str(e)}",)]
+
+    # Méthode pour convertir une instance SensorData en format pour BDD
+    def _sensorDataToDbFormat(self, sensorData):
+        """
+        Convertit une instance SensorData en format pour insertion dans la base de données.
+        
+        Args:
+            sensorData: L'instance SensorData à convertir
+            
+        Returns:
+            Un tuple contenant les valeurs à insérer dans la base de données
+        """
+        return (
+            sensorData.co2 if sensorData.co2 and sensorData.co2 > 0 else None,
+            sensorData.nh3 if sensorData.nh3 and sensorData.nh3 > 0 else None,
+            sensorData.distance if sensorData.distance and sensorData.distance > 0 else None,
+            sensorData.luminosity if sensorData.luminosity and sensorData.luminosity > 0 else None,
+            sensorData.uvIndex if sensorData.uvIndex and sensorData.uvIndex > 0 else None,
+            sensorData.irValue if sensorData.irValue and sensorData.irValue > 0 else None,
+            sensorData.temperature if sensorData.temperature else None,
+            sensorData.pressure if sensorData.pressure and sensorData.pressure > 0 else None,
+            sensorData.humidity if sensorData.humidity and sensorData.humidity > 0 else None,
+            sensorData.timestamp,
+            sensorData.rawData
+        )
+
+    # Méthode pour récupérer les n dernières mesures
+    def getLastMeasurements(self, limit=10):
+        """
+        Récupère les dernières mesures des capteurs.
+        
+        Args:
+            limit: Le nombre maximum de mesures à récupérer (par défaut 10)
+            
+        Returns:
+            Une liste de dictionnaires contenant les mesures, ou None en cas d'erreur
+        """
+        try:
+            cursor = self.connection.cursor()
+            query = """
+                SELECT id, co2, nh3, distance, luminosity, uv_index, ir_value, 
+                       temperature, pressure, humidity, timestamp
+                FROM sensor_data
+                ORDER BY timestamp DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (limit,))
+            rows = cursor.fetchall()
+            
+            if not rows:
+                return []
+                
+            results = []
+            for row in rows:
+                results.append({
+                    'id': row[0],
+                    'co2': row[1],
+                    'nh3': row[2],
+                    'distance': row[3],
+                    'luminosity': row[4],
+                    'uv_index': row[5],
+                    'ir_value': row[6],
+                    'temperature': row[7],
+                    'pressure': row[8],
+                    'humidity': row[9],
+                    'timestamp': row[10]
+                })
+            
+            return results
+            
+        except Exception as e:
+            print(f"Erreur lors de la récupération des dernières mesures: {str(e)}")
+            return None
+    
+    # Méthode pour calculer la moyenne des valeurs sur une période
+    def getAverages(self, hours=1):
+        """
+        Calcule la moyenne des valeurs des capteurs sur la période spécifiée.
+        
+        Args:
+            hours: Le nombre d'heures à considérer pour la moyenne (par défaut 1)
+            
+        Returns:
+            Un dictionnaire contenant les moyennes calculées, ou None en cas d'erreur
+        """
+        try:
+            cursor = self.connection.cursor()
+            query = """
+                SELECT 
+                    AVG(co2) as avg_co2,
+                    AVG(nh3) as avg_nh3,
+                    AVG(distance) as avg_distance,
+                    AVG(luminosity) as avg_luminosity,
+                    AVG(uv_index) as avg_uv,
+                    AVG(ir_value) as avg_ir,
+                    AVG(temperature) as avg_temperature,
+                    AVG(pressure) as avg_pressure,
+                    AVG(humidity) as avg_humidity,
+                    COUNT(*) as count
+                FROM sensor_data
+                WHERE timestamp > DATE_SUB(NOW(), INTERVAL %s HOUR)
+            """
+            cursor.execute(query, (hours,))
+            row = cursor.fetchone()
+            
+            if not row or row[9] == 0:  # Vérifier si count est 0
+                return None
+                
+            return {
+                'co2': row[0],
+                'nh3': row[1],
+                'distance': row[2],
+                'luminosity': row[3],
+                'uv_index': row[4],
+                'ir_value': row[5],
+                'temperature': row[6],
+                'pressure': row[7],
+                'humidity': row[8],
+                'count': row[9]
+            }
+            
+        except Exception as e:
+            print(f"Erreur lors du calcul des moyennes: {str(e)}")
+            return None 
