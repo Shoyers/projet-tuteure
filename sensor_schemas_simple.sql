@@ -1,5 +1,7 @@
+CREATE DATABASE serv-projet;
+
 -- Table unique pour stocker toutes les données des capteurs
-CREATE TABLE sensor_data (
+CREATE TABLE `serv-projet`.sensor_data (
     id INT AUTO_INCREMENT PRIMARY KEY,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     

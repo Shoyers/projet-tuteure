@@ -15,10 +15,10 @@ projet-tuteure/
 │   ├── views/          # Vues
 │   │   └── components/ # Composants d'interface
 │   ├── models/         # Modèles de données
+|   ├── public/         # image,font
 │   ├── database/       # Gestion de la base de données
 │   ├── services/       # Services métier
 │   └── utils/          # Utilitaires
-├── tests/              # Tests unitaires
 ├── config/             # Configuration
 ├── main.py             # Point d'entrée
 └── requirements.txt    # Dépendances
