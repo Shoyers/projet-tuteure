@@ -275,7 +275,7 @@ class TablesView:
                         fieldbackground=COLOR_PALETTE['bg_light'])
         style.configure("Treeview.Heading", 
                         background=COLOR_PALETTE['primary'],
-                        foreground=COLOR_PALETTE['text_light'],
+                        foreground=COLOR_PALETTE['text_dark'],
                         font=("Segoe UI", 10, "bold"))
         style.map("Treeview", 
                  background=[("selected", COLOR_PALETTE['accent'])],
