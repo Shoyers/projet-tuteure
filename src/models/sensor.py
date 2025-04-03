@@ -3,8 +3,7 @@ class Sensor:
     def __init__(self):
         # Initialisation avec des valeurs par défaut
         # Utiliser None pour certaines valeurs pour différencier les non-mesurées des zéros réels
-        self.co2 = None;         # Concentration de CO2 en PPM
-        self.nh3 = None;         # Concentration de NH3 en PPM
+        self.air_quality = None; # Qualité de l'air en PPM
         self.distance = None;    # Distance en mètres
         self.luminosity = None;  # Luminosité visible en lux
         self.uvIndex = None;     # Indice UV du capteur SI1145
@@ -21,10 +20,10 @@ class Sensor:
             dataStr: Chaîne de données contenant les valeurs des capteurs
             
         Formats supportés:
-        - Format standard: "CO2:8.34,NH3:16.75,DIST:2.5,LUM:800,TEMP:24.5,PRESS:1010,HUM:65"
+        - Format standard: "AQ:800,DIST:2.5,LUM:800,TEMP:24.5,PRESS:1010,HUM:65"
         - Format Arduino: "Temperature = 24.97 *C", "Pression = 1012.39 hPa", etc.
         - Format SI1145: "SI1145 - Visible: 262", "SI1145 - UV: 0.35", "SI1145 - IR: 348"
-        - Format MQ135: "MQ135 - CO2: 8.94 ppm", "MQ135 - NH3: 17.29 ppm", "MQ135 - Valeur lue: 348"
+        - Format MQ135: "MQ135 - Air Quality: 8.94 ppm", "MQ135 - Valeur lue: 348"
         - Format BME680: "BME680 - Temperature: 25.65 *C", "BME680 - Pression: 1010.01 hPa", "BME680 - Humidité: 31.57 %"
         - Format HC-SR04: "HC_SR04 - Distance: 34 cm"
         """
@@ -145,39 +144,16 @@ class Sensor:
                     
                     # Capteur de qualité d'air MQ135
                     if "MQ135" in dataStr:
-                        if "CO2" in dataStr:
-                            # Format "MQ135 - CO2: 8.94 ppm"
-                            match = re.search(r'MQ135.*CO2[:\s]+([\d.]+)', dataStr)
-                            if match:
-                                co2_value = float(match.group(1))
-                                # Stocker la valeur brute
-                                self.co2 = co2_value
-                                print(f"CO2 mis à jour: {self.co2} ppm")
-                                updated = True
-                            else:
-                                print(f"Format MQ135-CO2 non reconnu: {dataStr}")
-                        elif "NH3" in dataStr:
-                            # Format "MQ135 - NH3: 17.29 ppm"
-                            match = re.search(r'NH3[:\s]+([\d.]+)', dataStr)
-                            if match:
-                                nh3_value = float(match.group(1))
-                                # Stocker la valeur brute
-                                self.nh3 = nh3_value
-                                print(f"NH3 mis à jour: {self.nh3} ppm")
-                                updated = True
-                            else:
-                                print(f"Format MQ135-NH3 non reconnu: {dataStr}")
-                        elif "Valeur lue" in dataStr:
+                        if "Valeur lue" in dataStr:
                             # Format "MQ135 - Valeur lue: 348"
                             match = re.search(r'MQ135.*Valeur lue[:\s]+(\d+)', dataStr)
                             if match:
                                 mq135_value = int(match.group(1))
-                                # Pour une valeur brute du MQ135, on peut estimer CO2 et NH3
+                                # Pour une valeur brute du MQ135, on peut estimer AQ
                                 # Ces équations sont approximatives et devraient être calibrées
                                 # Conversion simplifiée pour démonstration
-                                self.co2 = mq135_value / 4.0  # Conversion approximative
-                                self.nh3 = mq135_value / 20.0  # Conversion approximative
-                                print(f"CO2 estimé depuis MQ135: {self.co2} ppm, NH3 estimé: {self.nh3} ppm")
+                                self.air_quality = mq135_value  # Conversion approximative
+                                print(f"Air Quality estimé depuis MQ135: {self.air_quality} ppm")
                                 updated = True
                             else:
                                 print(f"Format MQ135-Valeur lue non reconnu: {dataStr}")
@@ -187,12 +163,11 @@ class Sensor:
                     import traceback
                     traceback.print_exc()
             
-            # Format standard: "CO2:8.34,NH3:16.75,DIST:2.5,..."
+            # Format standard: "AQ:8.34,DIST:2.5,..."
             if not updated:
                 import re
                 # Recherche des valeurs avec des expressions régulières
-                co2Match = re.search(r'CO2:([\d.]+)', dataStr)
-                nh3Match = re.search(r'NH3:([\d.]+)', dataStr)
+                air_qualityMatch = re.search(r'AQ:([\d.]+)', dataStr)
                 distanceMatch = re.search(r'DIST:([\d.]+)', dataStr)
                 luminosityMatch = re.search(r'LUM:(\d+)', dataStr)
                 uvMatch = re.search(r'UV:([\d.]+)', dataStr)
@@ -202,14 +177,10 @@ class Sensor:
                 humidityMatch = re.search(r'HUM:(\d+)', dataStr)
                 
                 # Mise à jour des valeurs si trouvées
-                if co2Match:
-                    self.co2 = float(co2Match.group(1))
+                if air_qualityMatch:
+                    self.air_quality = float(air_qualityMatch.group(1))
                     updated = True
-                    print(f"CO2 mis à jour: {self.co2}")
-                if nh3Match:
-                    self.nh3 = float(nh3Match.group(1))
-                    updated = True
-                    print(f"NH3 mis à jour: {self.nh3}")
+                    print(f"Air Quality mis à jour: {self.air_quality}")
                 if distanceMatch:
                     self.distance = float(distanceMatch.group(1))
                     updated = True
@@ -263,8 +234,7 @@ class Sensor:
             Un dictionnaire contenant les valeurs des capteurs
         """
         return {
-            'co2': self.co2,
-            'nh3': self.nh3,
+            'air_quality': self.air_quality,
             'distance': self.distance,
             'luminosity': self.luminosity,
             'uvIndex': self.uvIndex,

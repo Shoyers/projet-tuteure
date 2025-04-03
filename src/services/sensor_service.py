@@ -183,9 +183,9 @@ class SensorService:
                     
                     # Traiter les données collectées
                     if collected_data:
-                        # Priorité aux messages spécifiques SI1145-Visible, MQ135-CO2, HC-SR04-Distance et BME680
+                        # Priorité aux messages spécifiques SI1145-Visible, MQ135-Air Quality, HC-SR04-Distance et BME680
                         visible_data = None
-                        co2_data = None
+                        air_quality_data = None
                         distance_data = None
                         mq135_raw_data = None
                         bme680_temp_data = None
@@ -199,10 +199,10 @@ class SensorService:
                                 visible_data = data_line
                                 print(f"Données SI1145-Visible détectées: {visible_data}")
                             
-                            # Données CO2 MQ135
-                            if "MQ135" in data_line and "CO2" in data_line:
-                                co2_data = data_line
-                                print(f"Données MQ135-CO2 détectées: {co2_data}")
+                            # Données Air Quality MQ135
+                            if "MQ135" in data_line and "Air Quality" in data_line:
+                                air_quality_data = data_line
+                                print(f"Données MQ135-Air Quality détectées: {air_quality_data}")
                             
                             # Données MQ135 brutes
                             if "MQ135" in data_line and "Valeur lue" in data_line:
@@ -235,21 +235,21 @@ class SensorService:
                             else:
                                 print(f"Échec de mise à jour de la luminosité avec: {visible_data}")
                         
-                        # MQ135 - CO2 spécifique
-                        if co2_data:
-                            updateSuccess = self.sensor.updateFromStr(co2_data)
+                        # MQ135 - Air Quality spécifique
+                        if air_quality_data:
+                            updateSuccess = self.sensor.updateFromStr(air_quality_data)
                             if updateSuccess:
-                                print(f"CO2 mis à jour avec succès: {self.sensor.co2}")
+                                print(f"Air Quality mis à jour avec succès: {self.sensor.air_quality}")
                             else:
-                                print(f"Échec de mise à jour du CO2 avec: {co2_data}")
+                                print(f"Échec de mise à jour de l'Air Quality avec: {air_quality_data}")
                         
-                        # MQ135 - Valeur brute (fallback pour CO2/NH3)
-                        if mq135_raw_data and not co2_data:
+                        # MQ135 - Valeur brute (fallback pour Air Quality)
+                        if mq135_raw_data and not air_quality_data:
                             updateSuccess = self.sensor.updateFromStr(mq135_raw_data)
                             if updateSuccess:
-                                print(f"CO2/NH3 estimés depuis MQ135 brut: CO2={self.sensor.co2}, NH3={self.sensor.nh3}")
+                                print(f"Air Quality estimés depuis MQ135 brut: Air Quality={self.sensor.air_quality}")
                             else:
-                                print(f"Échec de mise à jour CO2/NH3 depuis valeur brute avec: {mq135_raw_data}")
+                                print(f"Échec de mise à jour Air Quality depuis valeur brute avec: {mq135_raw_data}")
                         
                         # HC-SR04 - Distance
                         if distance_data:
@@ -286,7 +286,7 @@ class SensorService:
                         # Traiter ensuite les autres données
                         for data_line in collected_data:
                             # Ne pas retraiter les données spécifiques
-                            if (data_line != visible_data and data_line != co2_data and
+                            if (data_line != visible_data and data_line != air_quality_data and
                                 data_line != bme680_temp_data and data_line != bme680_press_data and
                                 data_line != bme680_hum_data and data_line != distance_data and
                                 data_line != mq135_raw_data):
@@ -307,9 +307,8 @@ class SensorService:
     # Génère des données de démonstration
     def _generateDemoData(self):
         # Des valeurs réalistes pour la démo
-        # D'abord générer CO2 et NH3
-        self.sensor.co2 = random.uniform(400, 1200);  # CO2 en ppm
-        self.sensor.nh3 = random.uniform(5, 25);      # NH3 en ppm
+        # D'abord générer AQ
+        self.sensor.air_quality = random.uniform(400, 1200);  # Air Quality en ppm
         
         self.sensor.distance = random.uniform(0.5, 5.0);
         self.sensor.luminosity = random.randint(200, 2000);  # Échelle Visible
@@ -318,7 +317,7 @@ class SensorService:
         self.sensor.humidity = random.randint(20, 80);
         
         # Afficher les valeurs générées pour le débogage
-        print(f"Demo data généré: CO2={self.sensor.co2} ppm, NH3={self.sensor.nh3} ppm")
+        print(f"Demo data généré: Air Quality={self.sensor.air_quality} ppm")
         print(f"luminosity={self.sensor.luminosity}, temperature={self.sensor.temperature}, " +
               f"humidity={self.sensor.humidity}, pressure={self.sensor.pressure}")
 
@@ -415,8 +414,8 @@ class SensorService:
         if self.demoMode:
             # Générer des données de démo
             self._generateDemoData();
-            # Inclure les mesures de CO2 et NH3
-            data = f"CO2:{self.sensor.co2:.2f},NH3:{self.sensor.nh3:.2f},DIST:{self.sensor.distance:.2f},LUM:{self.sensor.luminosity},TEMP:{self.sensor.temperature:.1f},HUM:{self.sensor.humidity},PRESS:{self.sensor.pressure}";
+            # Inclure les mesures de AQ
+            data = f"AQ:{self.sensor.air_quality:.2f},DIST:{self.sensor.distance:.2f},LUM:{self.sensor.luminosity},TEMP:{self.sensor.temperature:.1f},HUM:{self.sensor.humidity},PRESS:{self.sensor.pressure}";
             print(f"Données générées en mode démo: {data}")
             return data
         elif self.serialPort:
@@ -451,11 +450,8 @@ class SensorService:
                 formatted_values = []
                 
                 # Ajouter chaque valeur disponible (non nulle)
-                if self.sensor.co2 is not None:
-                    formatted_values.append(f"CO2:{self.sensor.co2:.2f}")
-                
-                if self.sensor.nh3 is not None:
-                    formatted_values.append(f"NH3:{self.sensor.nh3:.2f}")
+                if self.sensor.air_quality is not None:
+                    formatted_values.append(f"AQ:{self.sensor.air_quality:.2f}")
                 
                 if self.sensor.distance is not None:
                     formatted_values.append(f"DIST:{self.sensor.distance:.2f}")

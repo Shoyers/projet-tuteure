@@ -2,15 +2,14 @@ from datetime import datetime
 
 # Classe pour représenter les données des capteurs
 class SensorData:
-    def __init__(self, co2=None, nh3=None, distance=None, luminosity=None,
+    def __init__(self, air_quality=None, distance=None, luminosity=None,
                  uvIndex=None, irValue=None, temperature=None, pressure=None, 
                  humidity=None, timestamp=None, rawData=None):
         """
         Initialise les données du capteur.
         
         Args:
-            co2: Concentration de CO2 en PPM
-            nh3: Concentration de NH3 en PPM
+            air_quality: Qualité de l'air en PPM
             distance: Distance en mètres
             luminosity: Luminosité en lux
             uvIndex: Indice UV
@@ -21,8 +20,7 @@ class SensorData:
             timestamp: Horodatage de la mesure
             rawData: Données brutes reçues
         """
-        self.co2 = co2
-        self.nh3 = nh3
+        self.air_quality = air_quality
         self.distance = distance
         self.luminosity = luminosity
         self.uvIndex = uvIndex
@@ -50,8 +48,7 @@ class SensorData:
         
         # Définition des mappages de clés
         key_mapping = {
-            'co2': ['co2', 'CO2'],
-            'nh3': ['nh3', 'NH3'],
+            'air_quality': ['air_quality', 'airQuality', 'AQ'],
             'distance': ['distance', 'dist', 'DIST'],
             'luminosity': ['luminosity', 'lum', 'LUM'],
             'uvIndex': ['uvIndex', 'uv_index', 'UV'],
@@ -71,8 +68,7 @@ class SensorData:
             return None
         
         # Extraire les valeurs
-        co2 = get_value_from_dict(key_mapping['co2'])
-        nh3 = get_value_from_dict(key_mapping['nh3'])
+        air_quality = get_value_from_dict(key_mapping['air_quality'])
         distance = get_value_from_dict(key_mapping['distance'])
         luminosity = get_value_from_dict(key_mapping['luminosity'])
         uv_index = get_value_from_dict(key_mapping['uvIndex'])
@@ -84,14 +80,13 @@ class SensorData:
         raw_data = get_value_from_dict(key_mapping['rawData'])
         
         # Afficher les valeurs extraites pour le débogage
-        print(f"Valeurs extraites: co2={co2}, nh3={nh3}, " +
+        print(f"Valeurs extraites: air_quality={air_quality}, " +
               f"distance={distance}, luminosity={luminosity}, uv_index={uv_index}, " +
               f"ir_value={ir_value}, temperature={temperature}, pressure={pressure}, humidity={humidity}")
         
         # Créer l'objet SensorData
         return cls(
-            co2=co2,
-            nh3=nh3,
+            air_quality=air_quality,
             distance=distance,
             luminosity=luminosity,
             uvIndex=uv_index,
@@ -112,8 +107,7 @@ class SensorData:
             Un dictionnaire contenant les données des capteurs
         """
         return {
-            'co2': self.co2,
-            'nh3': self.nh3,
+            'air_quality': self.air_quality,
             'distance': self.distance,
             'luminosity': self.luminosity,
             'uvIndex': self.uvIndex,
@@ -134,8 +128,7 @@ class SensorData:
             Une chaîne représentant l'objet SensorData
         """
         return (
-            f"co2={self.co2}, "
-            f"nh3={self.nh3}, "
+            f"air_quality={self.air_quality}, "
             f"distance={self.distance}, "
             f"luminosity={self.luminosity}, "
             f"uvIndex={self.uvIndex}, "

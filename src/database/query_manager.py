@@ -39,8 +39,7 @@ class QueryManager:
             
             # Mapper les différents formats de clés possibles
             key_mapping = {
-                'co2': ['co2', 'CO2'],
-                'nh3': ['nh3', 'NH3'],
+                'air_quality': ['air_quality', 'airQuality', 'AQ'],
                 'distance': ['distance', 'dist', 'DIST'],
                 'luminosity': ['luminosity', 'lum', 'LUM'],
                 'uv_index': ['uv_index', 'uvIndex', 'UV'],
@@ -108,7 +107,7 @@ class QueryManager:
         """
         try:
             query = """
-            SELECT timestamp, air_quality, co2, nh3, distance, luminosity, uv_index, ir_value, temperature, pressure, humidity
+            SELECT timestamp, air_quality, distance, luminosity, uv_index, ir_value, temperature, pressure, humidity
             FROM sensor_data
             ORDER BY timestamp DESC
             LIMIT %s
@@ -125,15 +124,13 @@ class QueryManager:
                 data = {
                     'timestamp': row[0],
                     'airQuality': row[1],
-                    'co2': row[2],
-                    'nh3': row[3],
-                    'distance': row[4],
-                    'luminosity': row[5],
-                    'uvIndex': row[6],
-                    'irValue': row[7],
-                    'temperature': row[8],
-                    'pressure': row[9],
-                    'humidity': row[10]
+                    'distance': row[2],
+                    'luminosity': row[3],
+                    'uvIndex': row[4],
+                    'irValue': row[5],
+                    'temperature': row[6],
+                    'pressure': row[7],
+                    'humidity': row[8]
                 }
                 result.append(SensorData.fromDict(data))
             
@@ -169,7 +166,7 @@ class QueryManager:
             startDateStr = startDate.strftime('%Y-%m-%d %H:%M:%S')
             
             query = """
-            SELECT timestamp, air_quality, co2, nh3, distance, luminosity, uv_index, ir_value, temperature, pressure, humidity
+            SELECT timestamp, air_quality, distance, luminosity, uv_index, ir_value, temperature, pressure, humidity
             FROM sensor_data
             WHERE timestamp >= %s
             ORDER BY timestamp DESC
@@ -186,15 +183,13 @@ class QueryManager:
                 data = {
                     'timestamp': row[0],
                     'airQuality': row[1],
-                    'co2': row[2],
-                    'nh3': row[3],
-                    'distance': row[4],
-                    'luminosity': row[5],
-                    'uvIndex': row[6],
-                    'irValue': row[7],
-                    'temperature': row[8],
-                    'pressure': row[9],
-                    'humidity': row[10]
+                    'distance': row[2],
+                    'luminosity': row[3],
+                    'uvIndex': row[4],
+                    'irValue': row[5],
+                    'temperature': row[6],
+                    'pressure': row[7],
+                    'humidity': row[8]
                 }
                 result.append(SensorData.fromDict(data))
             
@@ -307,8 +302,7 @@ class QueryManager:
             Un tuple contenant les valeurs à insérer dans la base de données
         """
         return (
-            sensorData.co2 if sensorData.co2 and sensorData.co2 > 0 else None,
-            sensorData.nh3 if sensorData.nh3 and sensorData.nh3 > 0 else None,
+            sensorData.air_quality if sensorData.air_quality and sensorData.air_quality > 0 else None,
             sensorData.distance if sensorData.distance and sensorData.distance > 0 else None,
             sensorData.luminosity if sensorData.luminosity and sensorData.luminosity > 0 else None,
             sensorData.uvIndex if sensorData.uvIndex and sensorData.uvIndex > 0 else None,
@@ -334,7 +328,7 @@ class QueryManager:
         try:
             cursor = self.connection.cursor()
             query = """
-                SELECT id, co2, nh3, distance, luminosity, uv_index, ir_value, 
+                SELECT id, air_quality, distance, luminosity, uv_index, ir_value, 
                        temperature, pressure, humidity, timestamp
                 FROM sensor_data
                 ORDER BY timestamp DESC
@@ -350,16 +344,15 @@ class QueryManager:
             for row in rows:
                 results.append({
                     'id': row[0],
-                    'co2': row[1],
-                    'nh3': row[2],
-                    'distance': row[3],
-                    'luminosity': row[4],
-                    'uv_index': row[5],
-                    'ir_value': row[6],
-                    'temperature': row[7],
-                    'pressure': row[8],
-                    'humidity': row[9],
-                    'timestamp': row[10]
+                    'air_quality': row[1],
+                    'distance': row[2],
+                    'luminosity': row[3],
+                    'uv_index': row[4],
+                    'ir_value': row[5],
+                    'temperature': row[6],
+                    'pressure': row[7],
+                    'humidity': row[8],
+                    'timestamp': row[9]
                 })
             
             return results
@@ -383,8 +376,7 @@ class QueryManager:
             cursor = self.connection.cursor()
             query = """
                 SELECT 
-                    AVG(co2) as avg_co2,
-                    AVG(nh3) as avg_nh3,
+                    AVG(air_quality) as avg_air_quality,
                     AVG(distance) as avg_distance,
                     AVG(luminosity) as avg_luminosity,
                     AVG(uv_index) as avg_uv,
@@ -403,15 +395,14 @@ class QueryManager:
                 return None
                 
             return {
-                'co2': row[0],
-                'nh3': row[1],
-                'distance': row[2],
-                'luminosity': row[3],
-                'uv_index': row[4],
-                'ir_value': row[5],
-                'temperature': row[6],
-                'pressure': row[7],
-                'humidity': row[8],
+                'air_quality': row[0],
+                'distance': row[1],
+                'luminosity': row[2],
+                'uv_index': row[3],
+                'ir_value': row[4],
+                'temperature': row[5],
+                'pressure': row[6],
+                'humidity': row[7],
                 'count': row[9]
             }
             

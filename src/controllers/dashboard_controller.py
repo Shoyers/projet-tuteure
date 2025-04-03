@@ -29,8 +29,7 @@ class DashboardController:
         
         # Dernières valeurs des capteurs
         self.latestData = {
-            'co2': 'N/A',
-            'nh3': 'N/A',
+            'air_quality': 'N/A',
             'distance': 'N/A',
             'luminosity': 'N/A',
             'uv_index': 'N/A',
@@ -107,8 +106,7 @@ class DashboardController:
             try:
                 # Générer des valeurs aléatoires pour les capteurs
                 demoData = {
-                    'co2': round(random.uniform(400, 1200), 2),
-                    'nh3': round(random.uniform(5, 25), 2),
+                    'air_quality': round(random.uniform(400, 1200), 2),
                     'distance': round(random.uniform(0.5, 5.0), 2),
                     'luminosity': random.randint(200, 2000),
                     'uv_index': round(random.uniform(0.1, 10.0), 2),
@@ -210,11 +208,8 @@ class DashboardController:
                         has_updated = False
                         
                         # Mise à jour des valeurs
-                        if sensor_data.get('co2') is not None:
-                            data['co2'] = sensor_data.get('co2')
-                            has_updated = True
-                        if sensor_data.get('nh3') is not None:
-                            data['nh3'] = sensor_data.get('nh3')
+                        if sensor_data.get('air_quality') is not None:
+                            data['air_quality'] = sensor_data.get('air_quality')
                             has_updated = True
                         if sensor_data.get('distance') is not None:
                             data['distance'] = sensor_data.get('distance')
@@ -281,7 +276,7 @@ class DashboardController:
         Returns:
             Dictionnaire contenant les valeurs des capteurs
         """
-        # Format possible: "CO2:8.94,NH3:17.29,DIST:1.5,LUM:500,TEMP:22.5,HUM:60,PRESS:1010"
+        # Format possible: "AQ:100,DIST:1.5,LUM:500,TEMP:22.5,HUM:60,PRESS:1010"
         data = {}
         
         try:
@@ -297,10 +292,8 @@ class DashboardController:
                         key, value = pair.split(':')
                         
                         # Convertir les clés en noms de variables
-                        if key == 'CO2':
-                            data['co2'] = float(value) if value and value.strip() else None
-                        elif key == 'NH3':
-                            data['nh3'] = float(value) if value and value.strip() else None
+                        if key == 'AQ':
+                            data['air_quality'] = float(value) if value and value.strip() else None
                         elif key == 'DIST':
                             data['distance'] = float(value) if value and value.strip() else None
                         elif key == 'LUM':
@@ -337,10 +330,8 @@ class DashboardController:
                 data = self.latestData.copy()
                 
                 # Convertir les noms de variables et mettre à jour uniquement les valeurs non nulles
-                if 'co2' in sensor_dict and sensor_dict['co2'] is not None:
-                    data['co2'] = sensor_dict['co2']
-                if 'nh3' in sensor_dict and sensor_dict['nh3'] is not None:
-                    data['nh3'] = sensor_dict['nh3']
+                if 'air_quality' in sensor_dict and sensor_dict['air_quality'] is not None:
+                    data['air_quality'] = sensor_dict['air_quality']
                 if 'distance' in sensor_dict and sensor_dict['distance'] is not None:
                     data['distance'] = sensor_dict['distance']
                 if 'luminosity' in sensor_dict and sensor_dict['luminosity'] is not None:
@@ -365,10 +356,8 @@ class DashboardController:
                 data = self.latestData.copy()
                 
                 # Ne pas ajouter une valeur si elle est None ou 0 (pourrait indiquer que le capteur n'a pas encore été mis à jour)
-                if sensor.co2 is not None and sensor.co2 > 0:
-                    data['co2'] = sensor.co2
-                if sensor.nh3 is not None and sensor.nh3 > 0:
-                    data['nh3'] = sensor.nh3
+                if sensor.air_quality is not None and sensor.air_quality > 0:
+                    data['air_quality'] = sensor.air_quality
                 if sensor.distance is not None and sensor.distance > 0:
                     data['distance'] = sensor.distance
                 if sensor.luminosity is not None and sensor.luminosity > 0:

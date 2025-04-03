@@ -1,0 +1,114 @@
+flowchart TD
+    subgraph "Application Entry"
+        mainPY["main.py"]:::entry
+        appPY["src/app.py"]:::entry
+    end
+    subgraph "Business Logic Layer"
+        subgraph "Controllers"
+            dashController["dashboard_controller.py"]:::controller
+            settingsController["settings_controller.py"]:::controller
+            tableController["table_controller.py"]:::controller
+        end
+        sensorService["sensor_service.py"]:::service
+    end
+    subgraph "Data Access Layer"
+        subgraph "Models"
+            sensorModel["sensor.py"]:::model
+            sensorDataModel["sensor_data.py"]:::model
+        end
+        subgraph "Database Access"
+            dbConnection["connection.py"]:::database
+            queryManager["query_manager.py"]:::database
+            mysqlDB["MySQL Database"]:::database
+        end
+    end
+    subgraph "Presentation Layer"
+        subgraph "Views"
+            dashView["dashboard_view.py"]:::view
+            settingsView["settings_view.py"]:::view
+            tablesView["tables_view.py"]:::view
+        end
+        publicAssets["Public Assets"]:::view
+    end
+    subgraph "Configuration & Utilities"
+        configSettings["config/settings.py"]:::config
+        subgraph "Utilities"
+            consoleRedirector["console_redirector.py"]:::utility
+            helpers["helpers.py"]:::utility
+        end
+    end
+    sqlSchema["sensor_schemas_simple.sql"]:::schema
+
+    %% Connections from Application Entry to Controllers
+    mainPY --> appPY
+    appPY --> dashController
+    appPY --> settingsController
+    appPY --> tableController
+
+    %% Controllers invoking service layer
+    dashController -->|"calls"| sensorService
+    settingsController -->|"calls"| sensorService
+    tableController -->|"calls"| sensorService
+
+    %% Controllers to Views
+    dashController -->|"renders"| dashView
+    settingsController -->|"renders"| settingsView
+    tableController -->|"renders"| tablesView
+
+    %% Service interacting with Models and Database
+    sensorService -->|"processes"| sensorModel
+    sensorService -->|"processes"| sensorDataModel
+    sensorService -->|"queries"| dbConnection
+    sensorService -->|"queries"| queryManager
+
+    %% Database Access to Physical Database and Schema
+    dbConnection -->|"connects"| mysqlDB
+    queryManager -->|"executes"| mysqlDB
+    sqlSchema -->|"initSchema"| mysqlDB
+
+    %% Service feeding real-time data to Views
+    sensorService -->|"LiveFeed"| dashView
+
+    %% Views using Public Assets
+    dashView -->|"assets"| publicAssets
+    settingsView -->|"assets"| publicAssets
+    tablesView -->|"assets"| publicAssets
+
+    %% Configuration influences Service and Database
+    configSettings -->|"configures"| sensorService
+    configSettings -->|"DBconfig"| dbConnection
+
+    %% Utility support for controllers
+    dashController -->|"utilizes"| helpers
+    settingsController -->|"utilizes"| consoleRedirector
+
+    %% Click Events
+    click mainPY "https://github.com/shoyers/projet-tuteure/blob/main/main.py"
+    click appPY "https://github.com/shoyers/projet-tuteure/blob/main/src/app.py"
+    click dashController "https://github.com/shoyers/projet-tuteure/blob/main/src/controllers/dashboard_controller.py"
+    click settingsController "https://github.com/shoyers/projet-tuteure/blob/main/src/controllers/settings_controller.py"
+    click tableController "https://github.com/shoyers/projet-tuteure/blob/main/src/controllers/table_controller.py"
+    click sensorService "https://github.com/shoyers/projet-tuteure/blob/main/src/services/sensor_service.py"
+    click sensorModel "https://github.com/shoyers/projet-tuteure/blob/main/src/models/sensor.py"
+    click sensorDataModel "https://github.com/shoyers/projet-tuteure/blob/main/src/models/sensor_data.py"
+    click dbConnection "https://github.com/shoyers/projet-tuteure/blob/main/src/database/connection.py"
+    click queryManager "https://github.com/shoyers/projet-tuteure/blob/main/src/database/query_manager.py"
+    click dashView "https://github.com/shoyers/projet-tuteure/blob/main/src/views/dashboard_view.py"
+    click settingsView "https://github.com/shoyers/projet-tuteure/blob/main/src/views/settings_view.py"
+    click tablesView "https://github.com/shoyers/projet-tuteure/blob/main/src/views/tables_view.py"
+    click publicAssets "https://github.com/shoyers/projet-tuteure/tree/main/src/public"
+    click configSettings "https://github.com/shoyers/projet-tuteure/blob/main/config/settings.py"
+    click consoleRedirector "https://github.com/shoyers/projet-tuteure/blob/main/src/utils/console_redirector.py"
+    click helpers "https://github.com/shoyers/projet-tuteure/blob/main/src/utils/helpers.py"
+    click sqlSchema "https://github.com/shoyers/projet-tuteure/blob/main/sensor_schemas_simple.sql"
+
+    %% Style Classes
+    classDef entry fill:#D1E8FF,stroke:#1F78C1,stroke-width:2px;
+    classDef controller fill:#FFE0B2,stroke:#FB8C00,stroke-width:2px;
+    classDef service fill:#FFF9C4,stroke:#F9A825,stroke-width:2px;
+    classDef model fill:#C8E6C9,stroke:#388E3C,stroke-width:2px;
+    classDef database fill:#FFCDD2,stroke:#D32F2F,stroke-width:2px;
+    classDef view fill:#D1C4E9,stroke:#7B1FA2,stroke-width:2px;
+    classDef config fill:#F0F4C3,stroke:#9E9D24,stroke-width:2px;
+    classDef utility fill:#B2EBF2,stroke:#00796B,stroke-width:2px;
+    classDef schema fill:#E1BEE7,stroke:#8E24AA,stroke-width:2px;

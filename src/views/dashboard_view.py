@@ -22,8 +22,7 @@ class DashboardView:
         self.onToggleDemo = onToggleDemo
         
         # Variables pour les valeurs des capteurs
-        self.co2Var = ctk.StringVar(value="N/A")
-        self.nh3Var = ctk.StringVar(value="N/A")
+        self.airQualityVar = ctk.StringVar(value="N/A")
         self.distanceVar = ctk.StringVar(value="N/A")
         self.luminosityVar = ctk.StringVar(value="N/A")
         self.uvIndexVar = ctk.StringVar(value="N/A")
@@ -195,59 +194,53 @@ class DashboardView:
         self.sensorsContainer.grid_columnconfigure((0, 1, 2), weight=1, uniform="equal")
         self.sensorsContainer.grid_rowconfigure((0, 1, 2, 3), weight=1)
         
-        # Première ligne - CO2, NH3, Distance
-        self.co2Card = SensorCard(
-            self.sensorsContainer, 0, 0, "CO2", 
-            self.co2Var, "src/public/icons/co2.png", 
+        # Première ligne - Air Quality, Distance
+        self.airQualityCard = SensorCard(
+            self.sensorsContainer, 0, 0, "Air Quality", 
+            self.airQualityVar, "src/public/icons/air-quality.png", 
             COLOR_PALETTE['primary'], self.museoFonts, "ppm"
         )
-        
-        self.nh3Card = SensorCard(
-            self.sensorsContainer, 0, 1, "NH3", 
-            self.nh3Var, "src/public/icons/nh3.png", 
-            COLOR_PALETTE['primary'], self.museoFonts, "ppm"
-        )
-        
+
         self.distanceCard = SensorCard(
-            self.sensorsContainer, 0, 2, "Distance", 
+            self.sensorsContainer, 0, 1, "Distance", 
             self.distanceVar, "src/public/icons/ruler.png", 
             COLOR_PALETTE['primary'], self.museoFonts, "m"
         )
         
         # Deuxième ligne - Luminosité, UV, IR
         self.luminosityCard = SensorCard(
-            self.sensorsContainer, 1, 0, "Luminosité", 
+            self.sensorsContainer, 0, 2, "Luminosité", 
             self.luminosityVar, "src/public/icons/sun.png", 
             COLOR_PALETTE['primary'], self.museoFonts, "lux"
         )
         
         self.uvIndexCard = SensorCard(
-            self.sensorsContainer, 1, 1, "UV Index", 
+            self.sensorsContainer, 1, 0, "UV Index", 
             self.uvIndexVar, "src/public/icons/uv.png", 
             COLOR_PALETTE['primary'], self.museoFonts
         )
         
         self.irValueCard = SensorCard(
-            self.sensorsContainer, 1, 2, "Infrarouge", 
+            self.sensorsContainer, 1, 1, "Infrarouge", 
             self.irValueVar, "src/public/icons/ir.png", 
             COLOR_PALETTE['primary'], self.museoFonts
         )
         
         # Troisième ligne - Température, Humidité, Pression
         self.temperatureCard = SensorCard(
-            self.sensorsContainer, 2, 0, "Température", 
+            self.sensorsContainer, 1, 2, "Température", 
             self.temperatureVar, "src/public/icons/thermometer.png", 
             COLOR_PALETTE['primary'], self.museoFonts, "°C"
         )
         
         self.humidityCard = SensorCard(
-            self.sensorsContainer, 2, 1, "Humidité", 
+            self.sensorsContainer, 2, 0, "Humidité", 
             self.humidityVar, "src/public/icons/humidity.png", 
             COLOR_PALETTE['primary'], self.museoFonts, "%"
         )
         
         self.pressureCard = SensorCard(
-            self.sensorsContainer, 2, 2, "Pression", 
+            self.sensorsContainer, 2, 1, "Pression", 
             self.pressureVar, "src/public/icons/barometer.png", 
             COLOR_PALETTE['primary'], self.museoFonts, "hPa"
         )
@@ -259,16 +252,11 @@ class DashboardView:
             data: Dictionnaire contenant les valeurs des capteurs
         """
         # Mettre à jour les variables de données si elles existent
-        if 'co2' in data and data['co2'] is not None and data['co2'] != 'N/A':
-            self.co2Var.set(f"{data['co2']:.2f}")
+        if 'air_quality' in data and data['air_quality'] is not None and data['air_quality'] != 'N/A':
+            self.airQualityVar.set(f"{data['air_quality']:.2f}")
         else:
-            self.co2Var.set("N/A")
-        
-        if 'nh3' in data and data['nh3'] is not None and data['nh3'] != 'N/A':
-            self.nh3Var.set(f"{data['nh3']:.2f}")
-        else:
-            self.nh3Var.set("N/A")
-        
+            self.airQualityVar.set("N/A")
+         
         if 'distance' in data and data['distance'] is not None and data['distance'] != 'N/A':
             self.distanceVar.set(f"{data['distance']:.2f}")
         else:
