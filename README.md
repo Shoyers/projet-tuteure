@@ -1,4 +1,4 @@
-# Projet Tuteuré - Tableau de bord des capteurss
+# Projet Tuteuré - Tableau de bord des capteurs
 
 Application de surveillance des capteurs en temps réel avec interface graphique.
 
