@@ -1,29 +1,23 @@
 from urllib.parse import urlparse;
+import logging;
+
+# Configuration du logger pour settings
+logger = logging.getLogger('Settings')
 
 
-# Lecture de l'URL de connexion depuis le fichier .env
-#with open('.env', 'r') as f:
-#    for line in f:
-#        if line.startswith('SERVER_MYSQL_URL='):
-#            db_url = line.split('=', 1)[1].strip();
-#            break;
 
-# Parse l'URL de connexion MySQL
-#parsed = urlparse(db_url);
-#DB_CONFIG = {
-#    'host': parsed.hostname,
-#    'user': parsed.username,
-#    'password': parsed.password,
-#    'database': parsed.path[1:]  # Enlever le premier '/'
-#};
-
+# VOIR DRIVE POUR LA SECRET KEY
 DB_CONFIG = {
     'host': 'localhost',
-    'user': 'root',
+    'user': 'client',
     'password': 'root',
-    'database': 'serv-projet'
+    'database': 'serv-projet',
+    'port': 3306,  # Port par défaut MySQL
+    'connect_timeout': 10,  # Timeout de 10 secondes
+    'raise_on_warnings': True
 };
 
+logger.info(f"Configuration DB chargée: {DB_CONFIG['user']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}");
 
 # Paramètres de l'interface
 UI_CONFIG = {
@@ -52,9 +46,9 @@ DEFAULT_SENSOR_VALUES = {
     'air_quality': 0,
     'distance': 0.0,
     'luminosity': 0,
-    'temperature': 20.0,
-    'pressure': 1000,
-    'humidity': 50
+    'temperature': 0.0,
+    'pressure': 0,
+    'humidity': 0
 };
 
 # Palettes de couleurs pour l'interface
@@ -71,5 +65,6 @@ COLOR_PALETTE = {
     'text_muted': "#6c757d",   # Texte grisé pour les informations secondaires
     'border': "#dee2e6",       # Bordures légères
     'bg_light': "#F8F9FA",     # Gris très clair pour le fond secondaire
+    'bg_white': "#FFFFFF",     # Blanc pur pour les cartes et tableaux
     'bg_card': "#FFFFFF"       # Blanc pour les cartes
 }; 

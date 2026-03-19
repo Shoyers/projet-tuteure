@@ -2,6 +2,7 @@ import tkinter as tk
 import customtkinter as ctk
 from config.settings import COLOR_PALETTE
 from src.views.components.sensor_card import SensorCard
+from src.views.components.gps_map import GPSMap
 
 # Vue du tableau de bord qui affiche les valeurs des capteurs et la console.
 class DashboardView:
@@ -30,23 +31,30 @@ class DashboardView:
         self.temperatureVar = ctk.StringVar(value="N/A")
         self.humidityVar = ctk.StringVar(value="N/A")
         self.pressureVar = ctk.StringVar(value="N/A")
+        self.gasVar = ctk.StringVar(value="N/A")
+        self.latitudeVar = ctk.StringVar(value="N/A")
+        self.longitudeVar = ctk.StringVar(value="N/A")
+        self.altitudeVar = ctk.StringVar(value="N/A")
         
         # Variables pour l'état des boutons
         self.isReading = False
         self.isDemoActive = False
+        
+        # Carte GPS
+        self.gpsMap = None
         
         # Créer le contenu du tableau de bord
         self.createDashboardContent()
         
     # Crée le contenu du tableau de bord
     def createDashboardContent(self):
-        # Configuration de la grille
-        self.parent.columnconfigure(0, weight=1)
+        # Configuration de la grille - Console prend toute la largeur
+        self.parent.columnconfigure(0, weight=1)  # Colonne principale (toute la largeur)
         self.parent.rowconfigure(0, weight=0)  # Contrôles
         self.parent.rowconfigure(1, weight=0)  # Capteurs
-        self.parent.rowconfigure(2, weight=1)  # Console
+        self.parent.rowconfigure(2, weight=3)  # Console (augmenté pour plus d'espace)
         
-        # Section des contrôles
+        # Section des contrôles (sur toute la largeur)
         self.createControlsSection()
         
         # Section capteurs
@@ -89,12 +97,35 @@ class DashboardView:
                                     font=ctk.CTkFont(family="Consolas", size=12),
                                     fg_color=COLOR_PALETTE['bg_card'], 
                                     border_width=0,
+                                    height=300,
                                     text_color=COLOR_PALETTE['text_dark']);
         self.console.grid(row=0, column=0, sticky="nsew", padx=15, pady=15)
+        
+        # Section carte GPS (colonne de droite)
+        #self.createGPSMapSection()
+    
+    def createGPSMapSection(self):
+        """Crée la section de la carte GPS"""
+        # Conteneur de la carte GPS
+        gpsSection = ctk.CTkFrame(self.parent, fg_color="transparent");
+        gpsSection.grid(row=2, column=1, sticky="nsew", padx=(20, 0), pady=0);
+        gpsSection.columnconfigure(0, weight=1);
+        gpsSection.rowconfigure(1, weight=1);
+        
+        # Titre de la section
+        gpsTitle = ctk.CTkLabel(gpsSection, text="Position GPS", 
+                               font=ctk.CTkFont(family=self.museoFonts.get('black', None), size=18),
+                               text_color=COLOR_PALETTE['text_dark']);
+        gpsTitle.grid(row=0, column=0, sticky="w", padx=0, pady=(0, 15));
+        
+        # Créer la carte GPS
+        self.gpsMap = GPSMap(gpsSection, width=400, height=500);
+        mapFrame = self.gpsMap.getFrame();
+        mapFrame.grid(row=1, column=0, sticky="nsew", padx=0, pady=0);
     
     def createControlsSection(self):
         """Crée la section des contrôles avec les boutons"""
-        # Conteneur pour les contrôles
+        # Conteneur pour les contrôles (sur toute la largeur)
         controlsContainer = ctk.CTkFrame(self.parent, fg_color=COLOR_PALETTE['bg_card'], corner_radius=8, border_width=1, border_color=COLOR_PALETTE['border']);
         controlsContainer.grid(row=0, column=0, sticky="ew", padx=0, pady=(0, 20));
         controlsContainer.grid_columnconfigure(0, weight=1);
@@ -244,6 +275,31 @@ class DashboardView:
             self.pressureVar, "src/public/icons/barometer.png", 
             COLOR_PALETTE['primary'], self.museoFonts, "hPa"
         )
+        
+        self.gasCard = SensorCard(
+            self.sensorsContainer, 2, 2, "Gas (BME680)", 
+            self.gasVar, "src/public/icons/gas.png", 
+            COLOR_PALETTE['primary'], self.museoFonts, "kΩ"
+        )
+        
+        # Quatrième ligne - GPS (Latitude, Longitude, Altitude)
+        self.latitudeCard = SensorCard(
+            self.sensorsContainer, 3, 0, "Latitude", 
+            self.latitudeVar, "src/public/icons/gps.png", 
+            COLOR_PALETTE['primary'], self.museoFonts, "°"
+        )
+        
+        self.longitudeCard = SensorCard(
+            self.sensorsContainer, 3, 1, "Longitude", 
+            self.longitudeVar, "src/public/icons/gps.png", 
+            COLOR_PALETTE['primary'], self.museoFonts, "°"
+        )
+        
+        self.altitudeCard = SensorCard(
+            self.sensorsContainer, 3, 2, "Altitude", 
+            self.altitudeVar, "src/public/icons/altitude.png", 
+            COLOR_PALETTE['primary'], self.museoFonts, "m"
+        )
     
     # Met à jour les valeurs des capteurs avec les nouvelles données
     def updateSensorValues(self, data):
@@ -291,6 +347,43 @@ class DashboardView:
             self.pressureVar.set(str(data['pressure']))
         else:
             self.pressureVar.set("N/A")
+        
+        if 'gas' in data and data['gas'] is not None and data['gas'] != 'N/A':
+            self.gasVar.set(f"{data['gas']:.2f}")
+        else:
+            self.gasVar.set("N/A")
+        
+        # Données GPS
+        if 'latitude' in data and data['latitude'] is not None and data['latitude'] != 'N/A':
+            self.latitudeVar.set(f"{data['latitude']:.6f}")
+        else:
+            self.latitudeVar.set("N/A")
+        
+        if 'longitude' in data and data['longitude'] is not None and data['longitude'] != 'N/A':
+            self.longitudeVar.set(f"{data['longitude']:.6f}")
+        else:
+            self.longitudeVar.set("N/A")
+        
+        if 'altitude' in data and data['altitude'] is not None and data['altitude'] != 'N/A':
+            self.altitudeVar.set(f"{data['altitude']:.2f}")
+        else:
+            self.altitudeVar.set("N/A")
+        
+        # Mettre à jour la carte GPS si disponible
+        if self.gpsMap and self.gpsMap.isAvailable():
+            lat = data.get('latitude')
+            lon = data.get('longitude')
+            alt = data.get('altitude')
+            
+            # Mettre à jour la position seulement si latitude et longitude sont valides
+            if lat is not None and lon is not None and lat != 'N/A' and lon != 'N/A':
+                try:
+                    lat_float = float(lat)
+                    lon_float = float(lon)
+                    alt_float = float(alt) if alt is not None and alt != 'N/A' else None
+                    self.gpsMap.updatePosition(lat_float, lon_float, alt_float)
+                except (ValueError, TypeError) as e:
+                    print(f"Erreur lors de la mise à jour de la carte GPS: {e}")
     
     # Ajoute un message à la console.
     def logToConsole(self, message):

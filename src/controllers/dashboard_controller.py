@@ -36,7 +36,8 @@ class DashboardController:
             'ir_value': 'N/A',
             'temperature': 'N/A',
             'humidity': 'N/A',
-            'pressure': 'N/A'
+            'pressure': 'N/A',
+            'gas': 'N/A'
         }
         
         # Créer un gestionnaire de requêtes si la connexion est établie
@@ -113,7 +114,8 @@ class DashboardController:
                     'ir_value': random.randint(200, 800),
                     'temperature': round(random.uniform(15, 35), 1),
                     'humidity': random.randint(20, 80),
-                    'pressure': random.randint(980, 1020)
+                    'pressure': random.randint(980, 1020),
+                    'gas': round(random.uniform(50, 500), 2)
                 }
                 
                 self.view.logToConsole(f"Données de démo générées: {demoData}")
@@ -232,6 +234,9 @@ class DashboardController:
                         if sensor_data.get('pressure') is not None:
                             data['pressure'] = sensor_data.get('pressure')
                             has_updated = True
+                        if sensor_data.get('gas') is not None:
+                            data['gas'] = sensor_data.get('gas')
+                            has_updated = True
                         
                         # Vérifier si on a des nouvelles valeurs
                         if has_updated:
@@ -265,129 +270,42 @@ class DashboardController:
             # Attendre avant la prochaine lecture
             time.sleep(1)
     
-    # Parse les données reçues des capteurs
     def parseSensorData(self, dataString):
-        """
-        Parse les données reçues des capteurs.
+        """Parse les données reçues des capteurs."""
+        from src.utils.sensor_parser import parse_sensor_string, normalize_sensor_dict
         
-        Args:
-            dataString: Chaîne de caractères contenant les données
-            
-        Returns:
-            Dictionnaire contenant les valeurs des capteurs
-        """
-        # Format possible: "AQ:100,DIST:1.5,LUM:500,TEMP:22.5,HUM:60,PRESS:1010"
         data = {}
         
         try:
             self.view.logToConsole(f"Parsing des données: {dataString}")
             
-            # Si la chaîne est au format standard avec ':'
-            if ':' in dataString:
-                # Diviser la chaîne en paires clé-valeur
-                pairs = dataString.strip().split(',')
-                
-                for pair in pairs:
-                    if ':' in pair:
-                        key, value = pair.split(':')
-                        
-                        # Convertir les clés en noms de variables
-                        if key == 'AQ':
-                            data['air_quality'] = float(value) if value and value.strip() else None
-                        elif key == 'DIST':
-                            data['distance'] = float(value) if value and value.strip() else None
-                        elif key == 'LUM':
-                            data['luminosity'] = int(value) if value and value.strip() else None
-                        elif key == 'UV':
-                            data['uv_index'] = float(value) if value and value.strip() else None
-                        elif key == 'IR':
-                            data['ir_value'] = int(value) if value and value.strip() else None
-                        elif key == 'TEMP':
-                            data['temperature'] = float(value) if value and value.strip() else None
-                        elif key == 'HUM':
-                            data['humidity'] = int(value) if value and value.strip() else None
-                        elif key == 'PRESS':
-                            data['pressure'] = int(value) if value and value.strip() else None
-                
-                # Si on a de nouvelles données, les fusionner avec les données existantes
-                # Au lieu de remplacer complètement les anciennes valeurs
-                if data:
-                    # Copie profonde pour éviter de modifier les données existantes directement
-                    merged_data = self.latestData.copy()
-                    # Mettre à jour uniquement les clés présentes dans les nouvelles données
-                    for key, value in data.items():
-                        if value is not None:
-                            merged_data[key] = value
-                    # Utiliser les données fusionnées pour l'affichage et l'enregistrement
-                    data = merged_data
-                    
-            # Format provenant directement de l'objet Sensor
+            # Utiliser le parser centralisé
+            parsed = parse_sensor_string(dataString)
+            
+            if parsed:
+                # Fusionner avec les dernières données
+                data = self.latestData.copy()
+                for key, value in parsed.items():
+                    if value is not None:
+                        data[key] = value
+                self.view.logToConsole(f"Données parsées avec succès: {data}")
+            
+            # Fallback: récupérer directement de l'objet Sensor
             elif hasattr(self.sensorService, 'sensor'):
                 sensor = self.sensorService.sensor
                 sensor_dict = sensor.toDict()
                 
-                # Copie profonde des données existantes
+                # Normaliser et fusionner
+                normalized = normalize_sensor_dict(sensor_dict)
                 data = self.latestData.copy()
                 
-                # Convertir les noms de variables et mettre à jour uniquement les valeurs non nulles
-                if 'air_quality' in sensor_dict and sensor_dict['air_quality'] is not None:
-                    data['air_quality'] = sensor_dict['air_quality']
-                if 'distance' in sensor_dict and sensor_dict['distance'] is not None:
-                    data['distance'] = sensor_dict['distance']
-                if 'luminosity' in sensor_dict and sensor_dict['luminosity'] is not None:
-                    data['luminosity'] = sensor_dict['luminosity']
-                if 'uvIndex' in sensor_dict and sensor_dict['uvIndex'] is not None:
-                    data['uv_index'] = sensor_dict['uvIndex']
-                if 'irValue' in sensor_dict and sensor_dict['irValue'] is not None:
-                    data['ir_value'] = sensor_dict['irValue']
-                if 'temperature' in sensor_dict and sensor_dict['temperature'] is not None:
-                    data['temperature'] = sensor_dict['temperature']
-                if 'humidity' in sensor_dict and sensor_dict['humidity'] is not None:
-                    data['humidity'] = sensor_dict['humidity']
-                if 'pressure' in sensor_dict and sensor_dict['pressure'] is not None:
-                    data['pressure'] = sensor_dict['pressure']
+                for key, value in normalized.items():
+                    if value is not None:
+                        data[key] = value
                 
-                self.view.logToConsole(f"Données extraites de l'objet sensor et fusionnées avec les précédentes: {data}")
+                self.view.logToConsole(f"Données extraites de l'objet sensor: {data}")
             
-            # Vérifier si des données ont été extraites, sinon utiliser directement l'objet sensor
-            if not data and hasattr(self.sensorService, 'sensor'):
-                sensor = self.sensorService.sensor
-                # Créer un dictionnaire à partir des données existantes
-                data = self.latestData.copy()
-                
-                # Ne pas ajouter une valeur si elle est None ou 0 (pourrait indiquer que le capteur n'a pas encore été mis à jour)
-                if sensor.air_quality is not None and sensor.air_quality > 0:
-                    data['air_quality'] = sensor.air_quality
-                if sensor.distance is not None and sensor.distance > 0:
-                    data['distance'] = sensor.distance
-                if sensor.luminosity is not None and sensor.luminosity > 0:
-                    data['luminosity'] = sensor.luminosity
-                if sensor.uvIndex is not None:
-                    data['uv_index'] = sensor.uvIndex
-                if sensor.irValue is not None and sensor.irValue > 0:
-                    data['ir_value'] = sensor.irValue
-                if sensor.temperature is not None:
-                    data['temperature'] = sensor.temperature
-                if sensor.humidity is not None and sensor.humidity > 0:
-                    data['humidity'] = sensor.humidity
-                if sensor.pressure is not None and sensor.pressure > 0:
-                    data['pressure'] = sensor.pressure
-                self.view.logToConsole(f"Données directement extraites de l'objet sensor et fusionnées: {data}")
-                
-            # Vérifier qu'il y a des données valides
-            if data:
-                # Vérifier si les valeurs sont des chaînes et les convertir
-                for key in data:
-                    if isinstance(data[key], str):
-                        try:
-                            if '.' in data[key]:
-                                data[key] = float(data[key])
-                            else:
-                                data[key] = int(data[key])
-                        except ValueError:
-                            pass  # Laisser comme chaîne si la conversion échoue
-                self.view.logToConsole(f"Données parsées avec succès: {data}")
-            else:
+            if not data:
                 self.view.logToConsole("Aucune donnée n'a pu être extraite")
                 
         except Exception as e:

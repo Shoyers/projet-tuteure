@@ -191,6 +191,9 @@ class SensorService:
                         bme680_temp_data = None
                         bme680_press_data = None
                         bme680_hum_data = None
+                        gps_lat_data = None
+                        gps_lon_data = None
+                        gps_alt_data = None
                         
                         # Identifier d'abord les messages importants
                         for data_line in collected_data:
@@ -205,7 +208,7 @@ class SensorService:
                                 print(f"Données MQ135-Air Quality détectées: {air_quality_data}")
                             
                             # Données MQ135 brutes
-                            if "MQ135" in data_line and "Valeur lue" in data_line:
+                            if "MQ135" in data_line and "Valeur" in data_line:
                                 mq135_raw_data = data_line
                                 print(f"Données MQ135 brutes détectées: {mq135_raw_data}")
                             
@@ -225,6 +228,20 @@ class SensorService:
                                 elif "Humidité" in data_line or "Humidite" in data_line:
                                     bme680_hum_data = data_line
                                     print(f"Données BME680-Humidité détectées: {bme680_hum_data}")
+                            
+                            # Données GPS
+                            if "GPS" in data_line:
+                                if "Latitude" in data_line:
+                                    gps_lat_data = data_line
+                                    print(f"Données GPS-Latitude détectées: {gps_lat_data}")
+                                elif "Longitude" in data_line:
+                                    gps_lon_data = data_line
+                                    print(f"Données GPS-Longitude détectées: {gps_lon_data}")
+                                elif "Altitude" in data_line:
+                                    gps_alt_data = data_line
+                                    print(f"Données GPS-Altitude détectées: {gps_alt_data}")
+                                elif "Recherche de position" in data_line:
+                                    print("GPS en cours de recherche de position...")
                         
                         # Traiter en priorité les données importantes
                         # SI1145 - Visible
@@ -283,13 +300,38 @@ class SensorService:
                             else:
                                 print(f"Échec de mise à jour de l'humidité avec: {bme680_hum_data}")
                         
+                        # GPS - Latitude
+                        if gps_lat_data:
+                            updateSuccess = self.sensor.updateFromStr(gps_lat_data)
+                            if updateSuccess:
+                                print(f"Latitude GPS mise à jour avec succès: {self.sensor.latitude}")
+                            else:
+                                print(f"Échec de mise à jour de la latitude avec: {gps_lat_data}")
+                        
+                        # GPS - Longitude
+                        if gps_lon_data:
+                            updateSuccess = self.sensor.updateFromStr(gps_lon_data)
+                            if updateSuccess:
+                                print(f"Longitude GPS mise à jour avec succès: {self.sensor.longitude}")
+                            else:
+                                print(f"Échec de mise à jour de la longitude avec: {gps_lon_data}")
+                        
+                        # GPS - Altitude
+                        if gps_alt_data:
+                            updateSuccess = self.sensor.updateFromStr(gps_alt_data)
+                            if updateSuccess:
+                                print(f"Altitude GPS mise à jour avec succès: {self.sensor.altitude}")
+                            else:
+                                print(f"Échec de mise à jour de l'altitude avec: {gps_alt_data}")
+                        
                         # Traiter ensuite les autres données
                         for data_line in collected_data:
                             # Ne pas retraiter les données spécifiques
                             if (data_line != visible_data and data_line != air_quality_data and
                                 data_line != bme680_temp_data and data_line != bme680_press_data and
                                 data_line != bme680_hum_data and data_line != distance_data and
-                                data_line != mq135_raw_data):
+                                data_line != mq135_raw_data and data_line != gps_lat_data and
+                                data_line != gps_lon_data and data_line != gps_alt_data):
                                 updateSuccess = self.sensor.updateFromStr(data_line)
                                 if updateSuccess:
                                     print(f"Autres données capteurs mises à jour: {self.sensor.toDict()}")
@@ -473,6 +515,18 @@ class SensorService:
                     
                 if self.sensor.pressure is not None:
                     formatted_values.append(f"PRESS:{self.sensor.pressure}")
+                
+                if self.sensor.gas is not None:
+                    formatted_values.append(f"GAS:{self.sensor.gas:.2f}")
+                
+                if self.sensor.latitude is not None:
+                    formatted_values.append(f"LAT:{self.sensor.latitude:.6f}")
+                
+                if self.sensor.longitude is not None:
+                    formatted_values.append(f"LON:{self.sensor.longitude:.6f}")
+                
+                if self.sensor.altitude is not None:
+                    formatted_values.append(f"ALT:{self.sensor.altitude:.2f}")
                 
                 # Joindre toutes les valeurs formatées
                 formattedData = ",".join(formatted_values)

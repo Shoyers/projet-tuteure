@@ -1,88 +1,69 @@
 from datetime import datetime, timedelta
 from src.models.sensor_data import SensorData
 
-# Gestionnaire de requêtes SQL pour la base de données
 class QueryManager:
-    # Initialise le gestionnaire de requêtes
     def __init__(self, dbConnection):
-        """        
-        Args:
-            dbConnection: La connexion à la base de données
-        """
+        """Initialise le gestionnaire de requêtes."""
         self.dbConnection = dbConnection
-        # Si dbConnection est une instance de DatabaseConnection, on utilise sa propriété connection
         if dbConnection is not None and hasattr(dbConnection, 'connection'):
             self.connection = dbConnection.connection
         else:
             self.connection = dbConnection
     
-    # Insère les données des capteurs dans la base de données
     def insertSensorData(self, data):
-        """
-        Insère des données de capteurs dans la base de données.
+        """Insère des données de capteurs dans la base de données."""
+        from src.utils.sensor_parser import normalize_sensor_dict
         
-        Args:
-            data: Un dictionnaire contenant les données à insérer.
-                 Les clés devraient correspondre aux noms des colonnes de la table sensor_data.
-        
-        Returns:
-            True si l'insertion a réussi, False sinon.
-        """
         try:
-            # Vérifier qu'un dictionnaire valide est fourni
             if not data or not isinstance(data, dict):
                 print("Données invalides pour l'insertion")
                 return False
             
-            # Normaliser les clés et traiter les valeurs spéciales
-            normalized_data = {}
+            # Normaliser les données avec le parser centralisé
+            normalized = normalize_sensor_dict(data)
             
-            # Mapper les différents formats de clés possibles
-            key_mapping = {
-                'air_quality': ['air_quality', 'airQuality', 'AQ'],
-                'distance': ['distance', 'dist', 'DIST'],
-                'luminosity': ['luminosity', 'lum', 'LUM'],
-                'uv_index': ['uv_index', 'uvIndex', 'UV'],
-                'ir_value': ['ir_value', 'irValue', 'IR'],
-                'temperature': ['temperature', 'temp', 'TEMP'],
-                'pressure': ['pressure', 'press', 'PRESS'],
-                'humidity': ['humidity', 'hum', 'HUM'],
-                'timestamp': ['timestamp', 'time', 'date'],
-                'raw_data': ['raw_data', 'rawData']
-            }
+            # Mapper vers les colonnes SQL (co2 au lieu de air_quality)
+            sql_data = {}
+            if normalized.get('air_quality') is not None:
+                sql_data['co2'] = normalized['air_quality']
+            if normalized.get('distance') is not None:
+                sql_data['distance'] = normalized['distance']
+            if normalized.get('luminosity') is not None:
+                sql_data['luminosity'] = normalized['luminosity']
+            if normalized.get('uv_index') is not None:
+                sql_data['uv_index'] = normalized['uv_index']
+            if normalized.get('ir_value') is not None:
+                sql_data['ir_value'] = normalized['ir_value']
+            if normalized.get('temperature') is not None:
+                sql_data['temperature'] = normalized['temperature']
+            if normalized.get('pressure') is not None:
+                sql_data['pressure'] = normalized['pressure']
+            if normalized.get('humidity') is not None:
+                sql_data['humidity'] = normalized['humidity']
+            if normalized.get('gas') is not None:
+                sql_data['gas'] = normalized['gas']
+            if normalized.get('latitude') is not None:
+                sql_data['latitude'] = normalized['latitude']
+            if normalized.get('longitude') is not None:
+                sql_data['longitude'] = normalized['longitude']
+            if normalized.get('altitude') is not None:
+                sql_data['altitude'] = normalized['altitude']
+            if normalized.get('timestamp') is not None:
+                sql_data['timestamp'] = normalized['timestamp']
+            if normalized.get('raw_data') is not None:
+                sql_data['raw_data'] = normalized['raw_data']
             
-            # Normaliser les données
-            for db_key, possible_keys in key_mapping.items():
-                for key in possible_keys:
-                    if key in data and data[key] is not None:
-                        # Convertir 'N/A' en None
-                        if data[key] == 'N/A':
-                            normalized_data[db_key] = None
-                        else:
-                            normalized_data[db_key] = data[key]
-                        break
-            
-            # Construire la requête d'insertion
-            columns = []
-            placeholders = []
-            values = []
-            
-            # Ajouter chaque clé et valeur s'ils sont présents et pas None
-            for key, value in normalized_data.items():
-                if value is not None:
-                    columns.append(key)
-                    placeholders.append("%s")
-                    values.append(value)
-            
-            # S'il n'y a pas de colonnes, ne pas créer d'insertion
-            if not columns:
+            if not sql_data:
                 print("Aucune donnée valide à insérer")
                 return False
             
             # Construire la requête
+            columns = list(sql_data.keys())
+            placeholders = ["%s"] * len(columns)
+            values = [sql_data[col] for col in columns]
+            
             query = f"INSERT INTO sensor_data ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
             
-            # Exécuter la requête
             cursor = self.connection.cursor()
             cursor.execute(query, values)
             self.connection.commit()
@@ -107,7 +88,8 @@ class QueryManager:
         """
         try:
             query = """
-            SELECT timestamp, air_quality, distance, luminosity, uv_index, ir_value, temperature, pressure, humidity
+            SELECT timestamp, co2, distance, luminosity, uv_index, ir_value, 
+                   temperature, pressure, humidity, latitude, longitude, altitude
             FROM sensor_data
             ORDER BY timestamp DESC
             LIMIT %s
@@ -123,6 +105,7 @@ class QueryManager:
             for row in rows:
                 data = {
                     'timestamp': row[0],
+                    # Garder 'airQuality' pour compatibilité avec SensorData.fromDict
                     'airQuality': row[1],
                     'distance': row[2],
                     'luminosity': row[3],
@@ -130,7 +113,10 @@ class QueryManager:
                     'irValue': row[5],
                     'temperature': row[6],
                     'pressure': row[7],
-                    'humidity': row[8]
+                    'humidity': row[8],
+                    'latitude': row[9],
+                    'longitude': row[10],
+                    'altitude': row[11]
                 }
                 result.append(SensorData.fromDict(data))
             
@@ -166,7 +152,8 @@ class QueryManager:
             startDateStr = startDate.strftime('%Y-%m-%d %H:%M:%S')
             
             query = """
-            SELECT timestamp, air_quality, distance, luminosity, uv_index, ir_value, temperature, pressure, humidity
+            SELECT timestamp, co2, distance, luminosity, uv_index, ir_value, 
+                   temperature, pressure, humidity, latitude, longitude, altitude
             FROM sensor_data
             WHERE timestamp >= %s
             ORDER BY timestamp DESC
@@ -189,7 +176,10 @@ class QueryManager:
                     'irValue': row[5],
                     'temperature': row[6],
                     'pressure': row[7],
-                    'humidity': row[8]
+                    'humidity': row[8],
+                    'latitude': row[9],
+                    'longitude': row[10],
+                    'altitude': row[11]
                 }
                 result.append(SensorData.fromDict(data))
             
@@ -235,6 +225,10 @@ class QueryManager:
             Un tuple (colonnes, lignes)
         """
         try:
+            if self.connection is None:
+                print("Erreur lors de la récupération des données de la table: MySQL Connection not available.")
+                return [], []
+                
             # Récupérer les informations sur les colonnes
             queryColumns = f"SHOW COLUMNS FROM {tableName}"
             
@@ -328,8 +322,8 @@ class QueryManager:
         try:
             cursor = self.connection.cursor()
             query = """
-                SELECT id, air_quality, distance, luminosity, uv_index, ir_value, 
-                       temperature, pressure, humidity, timestamp
+                SELECT id, co2, distance, luminosity, uv_index, ir_value, 
+                       temperature, pressure, humidity, latitude, longitude, altitude, timestamp
                 FROM sensor_data
                 ORDER BY timestamp DESC
                 LIMIT %s
@@ -344,6 +338,8 @@ class QueryManager:
             for row in rows:
                 results.append({
                     'id': row[0],
+                    # On expose toujours 'air_quality' côté Python,
+                    # même si la colonne SQL s'appelle co2.
                     'air_quality': row[1],
                     'distance': row[2],
                     'luminosity': row[3],
@@ -352,7 +348,10 @@ class QueryManager:
                     'temperature': row[6],
                     'pressure': row[7],
                     'humidity': row[8],
-                    'timestamp': row[9]
+                    'latitude': row[9],
+                    'longitude': row[10],
+                    'altitude': row[11],
+                    'timestamp': row[12]
                 })
             
             return results
@@ -376,7 +375,7 @@ class QueryManager:
             cursor = self.connection.cursor()
             query = """
                 SELECT 
-                    AVG(air_quality) as avg_air_quality,
+                    AVG(co2) as avg_co2,
                     AVG(distance) as avg_distance,
                     AVG(luminosity) as avg_luminosity,
                     AVG(uv_index) as avg_uv,
@@ -408,4 +407,190 @@ class QueryManager:
             
         except Exception as e:
             print(f"Erreur lors du calcul des moyennes: {str(e)}")
-            return None 
+            return None
+    
+    # Méthodes pour les insights ML (reason et confidence)
+    def getMLInsights(self, limit=100):
+        """
+        Récupère les données ML avec reason et confidence
+        
+        Args:
+            limit: Nombre maximum d'enregistrements à récupérer
+            
+        Returns:
+            Liste de dictionnaires contenant les données ML
+        """
+        try:
+            cursor = self.connection.cursor()
+            query = """
+                SELECT 
+                    id,
+                    timestamp,
+                    temperature,
+                    gas,
+                    reason,
+                    confidence
+                FROM sensor_data
+                WHERE reason IS NOT NULL OR confidence IS NOT NULL
+                ORDER BY timestamp DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (limit,))
+            rows = cursor.fetchall()
+            
+            results = []
+            for row in rows:
+                results.append({
+                    'id': row[0],
+                    'timestamp': row[1],
+                    'temperature': row[2],
+                    'gas': row[3],
+                    'reason': row[4],
+                    'confidence': row[5]
+                })
+            
+            return results
+            
+        except Exception as e:
+            print(f"Erreur lors de la récupération des insights ML: {str(e)}")
+            return []
+    
+    def getMLInsightsByConfidence(self, min_confidence=0, max_confidence=100, limit=100):
+        """
+        Récupère les données ML filtrées par niveau de confiance
+        
+        Args:
+            min_confidence: Confiance minimale (0-100)
+            max_confidence: Confiance maximale (0-100)
+            limit: Nombre maximum d'enregistrements
+            
+        Returns:
+            Liste de dictionnaires contenant les données ML filtrées
+        """
+        try:
+            cursor = self.connection.cursor()
+            query = """
+                SELECT 
+                    id,
+                    timestamp,
+                    temperature,
+                    gas,
+                    reason,
+                    confidence
+                FROM sensor_data_ml
+                WHERE confidence >= %s AND confidence <= %s
+                ORDER BY confidence DESC, timestamp DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (min_confidence, max_confidence, limit))
+            rows = cursor.fetchall()
+            
+            results = []
+            for row in rows:
+                results.append({
+                    'id': row[0],
+                    'timestamp': row[1],
+                    'temperature': row[2],
+                    'gas': row[3],
+                    'reason': row[4],
+                    'confidence': row[5]
+                })
+            
+            return results
+            
+        except Exception as e:
+            print(f"Erreur lors du filtrage par confiance: {str(e)}")
+            return []
+    
+    def searchMLInsightsByReason(self, keyword, limit=100):
+        """
+        Recherche les données ML par mot-clé dans la raison
+        
+        Args:
+            keyword: Mot-clé à rechercher dans la colonne reason
+            limit: Nombre maximum d'enregistrements
+            
+        Returns:
+            Liste de dictionnaires contenant les résultats de recherche
+        """
+        try:
+            cursor = self.connection.cursor()
+            query = """
+                SELECT 
+                    id,
+                    timestamp,
+                    temperature,
+                    gas,
+                    reason,
+                    confidence
+                FROM sensor_data_ml
+                WHERE reason LIKE %s
+                ORDER BY confidence DESC, timestamp DESC
+                LIMIT %s
+            """
+            search_pattern = f"%{keyword}%"
+            cursor.execute(query, (search_pattern, limit))
+            rows = cursor.fetchall()
+            
+            results = []
+            for row in rows:
+                results.append({
+                    'id': row[0],
+                    'timestamp': row[1],
+                    'temperature': row[2],
+                    'gas': row[3],
+                    'reason': row[4],
+                    'confidence': row[5]
+                })
+            
+            return results
+            
+        except Exception as e:
+            print(f"Erreur lors de la recherche par raison: {str(e)}")
+            return []
+    
+    def getMLStats(self):
+        """
+        Récupère les statistiques sur les données ML
+        
+        Returns:
+            Dictionnaire avec les statistiques
+        """
+        try:
+            cursor = self.connection.cursor()
+            query = """
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(CASE WHEN confidence >= 80 THEN 1 END) as high_confidence,
+                    COUNT(CASE WHEN confidence >= 50 AND confidence < 80 THEN 1 END) as medium_confidence,
+                    COUNT(CASE WHEN confidence < 50 THEN 1 END) as low_confidence,
+                    AVG(confidence) as avg_confidence,
+                    MAX(confidence) as max_confidence,
+                    MIN(confidence) as min_confidence
+                FROM sensor_data_ml
+                WHERE confidence IS NOT NULL
+            """
+            cursor.execute(query)
+            row = cursor.fetchone()
+            
+            return {
+                'total': row[0] or 0,
+                'high_confidence': row[1] or 0,
+                'medium_confidence': row[2] or 0,
+                'low_confidence': row[3] or 0,
+                'avg_confidence': row[4] or 0,
+                'max_confidence': row[5] or 0,
+                'min_confidence': row[6] or 0
+            }
+            
+        except Exception as e:
+            print(f"Erreur lors du calcul des statistiques ML: {str(e)}")
+            return {
+                'total': 0,
+                'high_confidence': 0,
+                'medium_confidence': 0,
+                'low_confidence': 0,
+                'avg_confidence': 0,
+                'max_confidence': 0,
+                'min_confidence': 0
+            } 

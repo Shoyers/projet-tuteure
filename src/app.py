@@ -5,9 +5,11 @@ from config.settings import COLOR_PALETTE
 from src.views.dashboard_view import DashboardView
 from src.views.tables_view import TablesView
 from src.views.settings_view import SettingsView
+from src.views.ml_insights_view import MLInsightsView
 from src.controllers.dashboard_controller import DashboardController
 from src.controllers.table_controller import TableController
 from src.controllers.settings_controller import SettingsController
+from src.controllers.ml_insights_controller import MLInsightsController
 from src.services.sensor_service import SensorService
 from src.database.connection import DatabaseConnection
 from src.database.query_manager import QueryManager
@@ -137,6 +139,7 @@ class SensorDashboardApp:
         navbar.grid_columnconfigure(0, weight=1)
         navbar.grid_columnconfigure(1, weight=1)
         navbar.grid_columnconfigure(2, weight=1)
+        navbar.grid_columnconfigure(3, weight=1)
         navbar.grid_rowconfigure(0, weight=1)
         
         # Variable pour l'onglet actif
@@ -164,6 +167,17 @@ class SensorDashboardApp:
                                  height=60)
         tablesBtn.grid(row=0, column=1, sticky="nsew")
         
+        # Bouton pour l'analyse IA
+        mlBtn = ctk.CTkButton(navbar, text="Analyse IA", 
+                             command=lambda: self.switchTab("ml_insights"),
+                             font=ctk.CTkFont(family=self.museoFonts.get('bold', None), size=14),
+                             fg_color="transparent",
+                             text_color=COLOR_PALETTE['text_light'],
+                             hover_color=COLOR_PALETTE['accent'],
+                             corner_radius=0,
+                             height=60)
+        mlBtn.grid(row=0, column=2, sticky="nsew")
+        
         # Bouton pour les paramètres
         settingsBtn = ctk.CTkButton(navbar, text="Paramètres", 
                                    command=lambda: self.switchTab("settings"),
@@ -173,12 +187,13 @@ class SensorDashboardApp:
                                    hover_color=COLOR_PALETTE['accent'],
                                    corner_radius=0,
                                    height=60)
-        settingsBtn.grid(row=0, column=2, sticky="nsew")
+        settingsBtn.grid(row=0, column=3, sticky="nsew")
         
         # Stocker les boutons pour pouvoir les mettre à jour
         self.navButtons = {
             "dashboard": dashboardBtn,
             "tables": tablesBtn,
+            "ml_insights": mlBtn,
             "settings": settingsBtn
         }
     
@@ -193,7 +208,8 @@ class SensorDashboardApp:
             fg_color="transparent", 
             scrollbar_button_color=scrollbar_fg,
             scrollbar_button_hover_color=scrollbar_hover,
-            corner_radius=10
+            corner_radius=10,
+            scrollbar_fg_color="transparent"  # Masquer le scrollbar
         )
         
         self.tablesFrame = ctk.CTkScrollableFrame(
@@ -202,6 +218,16 @@ class SensorDashboardApp:
             scrollbar_button_color=scrollbar_fg,
             scrollbar_button_hover_color=scrollbar_hover,
             corner_radius=10
+            # PAS de scrollbar_fg_color="transparent" pour Tables
+        )
+        
+        self.mlInsightsFrame = ctk.CTkScrollableFrame(
+            self.contentFrame,
+            fg_color="transparent",
+            scrollbar_button_color=scrollbar_fg,
+            scrollbar_button_hover_color=scrollbar_hover,
+            corner_radius=10,
+            scrollbar_fg_color="transparent"  # Masquer le scrollbar
         )
 
         self.settingsFrame = ctk.CTkFrame(self.contentFrame, fg_color="transparent")
@@ -215,7 +241,7 @@ class SensorDashboardApp:
         #)
         
         # Configurer les frames
-        for frame in [self.dashboardFrame, self.tablesFrame, self.settingsFrame]:
+        for frame in [self.dashboardFrame, self.tablesFrame, self.mlInsightsFrame, self.settingsFrame]:
             frame.grid_columnconfigure(0, weight=1)
         
         # Créer les vues
@@ -231,6 +257,11 @@ class SensorDashboardApp:
             self.museoFonts, 
             onTableSelect=self.onTableSelect, 
             onRefreshTables=self.refreshTablesList
+        )
+        self.mlInsightsView = MLInsightsView(
+            self.mlInsightsFrame,
+            self.museoFonts,
+            onRefresh=self.refreshMLInsights
         )
         self.settingsView = SettingsView(
             self.settingsFrame,
@@ -249,6 +280,10 @@ class SensorDashboardApp:
         )
         self.tableController = TableController(
             self.tablesView, 
+            self.queryManager
+        )
+        self.mlInsightsController = MLInsightsController(
+            self.mlInsightsView,
             self.queryManager
         )
         self.settingsController = SettingsController(
@@ -272,6 +307,7 @@ class SensorDashboardApp:
         # Masquer toutes les vues
         self.dashboardFrame.grid_forget()
         self.tablesFrame.grid_forget()
+        self.mlInsightsFrame.grid_forget()
         self.settingsFrame.grid_forget()
         
         # Afficher la vue sélectionnée
@@ -281,6 +317,9 @@ class SensorDashboardApp:
         elif tabName == "tables":
             self.tablesFrame.grid(row=0, column=0, sticky="nsew")
             self.currentScrollableFrame = self.tablesFrame
+        elif tabName == "ml_insights":
+            self.mlInsightsFrame.grid(row=0, column=0, sticky="nsew")
+            self.currentScrollableFrame = self.mlInsightsFrame
         elif tabName == "settings":
             self.settingsFrame.grid(row=0, column=0, sticky="nsew")
             #self.currentScrollableFrame = self.settingsFrame
@@ -434,4 +473,15 @@ class SensorDashboardApp:
     # Arrête la lecture des données des capteurs.
     def stopDataReading(self):
         self.dashboardController.stopDataReading()
-        self.dashboardView.logToConsole("Lecture des données arrêtée") 
+        self.dashboardView.logToConsole("Lecture des données arrêtée")
+    
+    # Rafraîchit les données ML
+    def refreshMLInsights(self):
+        """Rafraîchit les données ML dans l'onglet Analyse IA"""
+        if not self.dbConnection.isConnected():
+            print("Impossible de charger les données ML : connexion à la base de données non établie")
+            self.mlInsightsView.showError("Connexion à la base de données non établie")
+            return
+        
+        print("Chargement des données ML...")
+        self.mlInsightsController.loadMLData(limit=100) 
